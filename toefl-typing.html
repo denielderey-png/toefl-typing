@@ -1400,35 +1400,56 @@ function renderLeaderboardBox(modeSel){
 function getNewsEndpoint(){ try{return localStorage.getItem('toefl_news_endpoint')||'';}catch(e){return '';} }
 function setNewsEndpoint(u){ try{u?localStorage.setItem('toefl_news_endpoint',u):localStorage.removeItem('toefl_news_endpoint');}catch(e){} }
 const NEWS_FEEDS=[['news','头条'],['world','世界'],['technology','科技'],['science','科学'],['business','商业']];
+const BBC_RSS={
+  news:'https://feeds.bbci.co.uk/news/rss.xml',
+  world:'https://feeds.bbci.co.uk/news/world/rss.xml',
+  technology:'https://feeds.bbci.co.uk/news/technology/rss.xml',
+  science:'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',
+  business:'https://feeds.bbci.co.uk/news/business/rss.xml'
+};
+function cleanNewsText(title,desc){
+  title=String(title||'').replace(/\s+/g,' ').trim();
+  desc=String(desc||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+  let text=title;
+  if(desc && desc.toLowerCase()!==title.toLowerCase()) text=title.replace(/[.!?]?$/,'.')+' '+desc;
+  return {title:title,text:text};
+}
 async function newsFetch(feed){
-  const ep=getNewsEndpoint(); if(!ep)throw new Error('未配置后端');
-  const sep=ep.includes('?')?'&':'?';
-  const res=await fetch(ep+sep+'feed='+encodeURIComponent(feed));
+  const ep=getNewsEndpoint();
+  // 进阶：用户自建后端（news-worker.js）
+  if(ep){
+    const sep=ep.includes('?')?'&':'?';
+    const res=await fetch(ep+sep+'feed='+encodeURIComponent(feed));
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    return Array.isArray(d)?d:(d.items||[]);
+  }
+  // 默认：免费公共 RSS→JSON 中转，无需任何后端
+  const rss=BBC_RSS[feed]||BBC_RSS.news;
+  const res=await fetch('https://api.rss2json.com/v1/api.json?count=20&rss_url='+encodeURIComponent(rss));
   if(!res.ok)throw new Error('HTTP '+res.status);
   const d=await res.json();
-  return Array.isArray(d)?d:(d.items||[]);
+  if(d.status!=='ok'||!Array.isArray(d.items))throw new Error((d&&d.message)||'中转服务返回异常');
+  return d.items.map(it=>{
+    const c=cleanNewsText(it.title, it.description||it.content);
+    return {title:c.title, text:c.text, link:String(it.link||'')};
+  }).filter(x=>x.title);
 }
 function renderNews(feedSel){
   stopTimer();
-  if(!getNewsEndpoint()){
-    card.innerHTML=`
-     <div class="topline"><span class="counter">每日新闻 · Daily News</span><span class="pill">NEWS</span></div>
-     <div class="aiendpoint" style="margin:0 auto">
-       <p style="font-size:13px;margin-bottom:8px">「每日新闻」会抓取当天 BBC 头条摘要作为打字材料。浏览器不能直接跨域抓取，需先部署 <b>news-worker.js</b>（见 README）。填入你的新闻服务地址即可启用：</p>
-       <input class="type" id="newsEp" placeholder="https://your-news.workers.dev" style="font-size:15px">
-       <div class="controls" style="margin-top:12px"><button class="btn primary" id="newsSave">保存</button></div>
-     </div>`;
-    document.getElementById('newsSave').onclick=()=>{ setNewsEndpoint(document.getElementById('newsEp').value.trim()); renderNews('news'); };
-    return;
-  }
   const feed=feedSel||'news';
+  const usingCustom=!!getNewsEndpoint();
   card.innerHTML=`
-    <div class="topline"><span class="counter">今日 BBC 新闻 · 点一条开始打字</span><span class="pill">NEWS</span></div>
+    <div class="topline"><span class="counter">今日 BBC 新闻 · 点一条开始打字</span><span class="pill">NEWS${usingCustom?' · 自建':''}</span></div>
     <div class="subtabs">${NEWS_FEEDS.map(([k,l])=>`<button class="subtab${feed===k?' active':''}" data-f="${k}">${l}</button>`).join('')}
-      <button class="subtab" data-f="__reset">⚙ 改地址</button></div>
+      <button class="subtab" data-f="__adv" title="进阶：用自建后端获得更稳定的服务">⚙</button></div>
     <div id="newsbox" class="loadcard" style="padding:24px"><span class="spin"></span>正在获取今日 BBC 新闻…</div>`;
   card.querySelectorAll('.subtab[data-f]').forEach(b=>b.onclick=()=>{
-    if(b.dataset.f==='__reset'){ if(confirm('清除当前新闻地址并重新设置？')){setNewsEndpoint('');renderNews();} return; }
+    if(b.dataset.f==='__adv'){
+      const v=prompt('进阶设置：自建新闻后端地址（部署 news-worker.js 可更稳定）。\n留空 = 用默认的免费公共中转。', getNewsEndpoint()||'');
+      if(v!==null){ setNewsEndpoint(v.trim()); renderNews(feed); }
+      return;
+    }
     renderNews(b.dataset.f);
   });
   newsFetch(feed).then(items=>{
