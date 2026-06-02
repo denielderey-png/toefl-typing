@@ -230,6 +230,13 @@
   .okdot{background:var(--good)} .warndot{background:var(--gold)}
   .aiendpoint{max-width:420px;margin:20px auto 0;text-align:left;border-top:1px dashed var(--line);padding-top:16px}
   .aiendpoint .controls{justify-content:flex-start}
+  .lblist{display:flex;flex-direction:column;gap:6px;position:relative;z-index:1}
+  .lbrow{display:flex;align-items:center;gap:12px;padding:9px 13px;border:1px solid var(--line);border-radius:9px;background:var(--paper-2);font-family:"JetBrains Mono",monospace;font-size:14px}
+  .lbrow .lbrank{width:24px;text-align:center;font-weight:700;color:var(--accent)}
+  .lbrow:nth-child(1) .lbrank,.lbrow:nth-child(2) .lbrank,.lbrow:nth-child(3) .lbrank{color:var(--gold);font-size:16px}
+  .lbrow .lbname{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbrow .lbwpm{font-weight:700;color:var(--good)}
+  .lbrow .lbacc{color:var(--ink-soft);width:48px;text-align:right}
 </style>
 </head>
 <body>
@@ -248,6 +255,7 @@
     <button class="tab" data-mode="passage">文章练习<small>Passage typing</small></button>
     <button class="tab" data-mode="grammar">语法练习<small>Grammar drills</small></button>
     <button class="tab" data-mode="errors">错题本<small>Review</small></button>
+    <button class="tab" data-mode="rank">排行榜<small>Leaderboard</small></button>
   </div>
 
   <div class="stats">
@@ -767,17 +775,22 @@ function showPassageResult(){
   const mins=(Date.now()-startTime)/60000;
   const wpm=Math.round((correctKeys/5)/mins);
   const acc=keystrokes>0?Math.round(correctKeys/keystrokes*100):100;
+  recordRun('passage',wpm,acc);
   card.innerHTML=`
     <div class="result">
       <h2>完成！🎉</h2>
-      <div class="big">${wpm}</div>
+      <div class="big">${isFinite(wpm)?wpm:0}</div>
       <p>WPM 速度　·　准确率 ${acc}%　·　用时 ${Math.floor((Date.now()-startTime)/1000)} 秒</p>
       <div class="controls" style="margin-top:24px">
         <button class="btn primary" id="again">再来一篇 →</button>
+        <button class="btn dark" id="submitLB">🏆 上榜</button>
+        <button class="btn" id="viewRank">查看排行榜 →</button>
         <button class="btn ai" id="aip2">✨ AI 新文章 →</button>
         <button class="btn" id="same">重做本篇</button>
       </div>
     </div>`;
+  document.getElementById('submitLB').onclick=()=>submitScore('passage',isFinite(wpm)?wpm:0,acc);
+  document.getElementById('viewRank').onclick=()=>switchMode('rank');
   document.getElementById('again').onclick=()=>{aiPassage=null;passTyped='';pIdx=(pIdx+1)%PASSAGES.length;buildPassage();};
   document.getElementById('aip2').onclick=()=>{passTyped='';aiNewPassage();};
   document.getElementById('same').onclick=()=>{passTyped='';renderPassageCard();};
@@ -1103,6 +1116,55 @@ function loadErrors(){
   }catch(e){ /* 损坏数据则忽略，保持空错题本 */ }
 }
 
+/* —— 个人成绩 / 历史（localStorage） —— */
+const STATS_KEY='toefl_typing_stats_v1';
+let stats={runs:[]};
+function loadStats(){
+  if(!canStore)return;
+  try{ const r=localStorage.getItem(STATS_KEY); if(r){const o=JSON.parse(r); if(o&&Array.isArray(o.runs))stats=o;} }catch(e){}
+}
+function saveStats(){
+  if(!canStore)return;
+  try{ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }catch(e){}
+}
+function recordRun(m,wpm,acc){
+  wpm=Math.round(wpm); if(!isFinite(wpm)||wpm<0)wpm=0; if(wpm>999)wpm=999;
+  acc=Math.round(acc); if(!isFinite(acc)||acc<0)acc=0; if(acc>100)acc=100;
+  stats.runs.push({mode:m,wpm:wpm,acc:acc,ts:Date.now()});
+  if(stats.runs.length>500)stats.runs=stats.runs.slice(-500);
+  saveStats();
+}
+function bestWpm(m){ return stats.runs.filter(r=>r.mode===m).reduce((mx,r)=>Math.max(mx,r.wpm),0); }
+
+/* —— 全球排行榜：可配置后端（Cloudflare Worker + D1），未配置时优雅降级 —— */
+function getLBEndpoint(){ try{return localStorage.getItem('toefl_lb_endpoint')||'';}catch(e){return '';} }
+function setLBEndpoint(u){ try{u?localStorage.setItem('toefl_lb_endpoint',u):localStorage.removeItem('toefl_lb_endpoint');}catch(e){} }
+function getLBName(){ try{return localStorage.getItem('toefl_lb_name')||'';}catch(e){return '';} }
+function setLBName(n){ try{n?localStorage.setItem('toefl_lb_name',n):localStorage.removeItem('toefl_lb_name');}catch(e){} }
+async function lbFetch(m){
+  const ep=getLBEndpoint(); if(!ep)throw new Error('未配置后端');
+  const sep=ep.includes('?')?'&':'?';
+  const res=await fetch(ep+sep+'mode='+encodeURIComponent(m)+'&limit=20');
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const d=await res.json(); return Array.isArray(d)?d:(d.scores||[]);
+}
+async function lbSubmit(name,m,wpm,acc){
+  const ep=getLBEndpoint(); if(!ep)throw new Error('未配置后端');
+  const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,mode:m,wpm:Math.round(wpm),acc:Math.round(acc)})});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return res.json();
+}
+async function submitScore(m,wpm,acc){
+  if(!getLBEndpoint()){ alert('全球排行榜还没配置后端。请到「排行榜」标签页填入你的排行榜服务地址。'); return; }
+  let name=prompt('上榜昵称（1–16 字）：', getLBName()||'');
+  if(name==null)return; name=String(name).trim().slice(0,16);
+  if(!name){ alert('昵称不能为空'); return; }
+  setLBName(name);
+  try{ await lbSubmit(name,m,wpm,acc); alert('已上榜！🏆'); mode='rank'; setActiveTab('rank'); renderRank(); }
+  catch(e){ alert('上榜失败：'+e.message); }
+}
+
 function cleanWord(w){return String(w).toLowerCase().replace(/[^a-z'-]/g,'');}
 function logWordErr(word,cn,m,typed){
   const w=cleanWord(word); if(!w)return;
@@ -1263,9 +1325,77 @@ async function aiAnalyze(){
   }
 }
 
+/* ============================================================
+   排行榜：个人最佳/历史（本地） + 全球排行榜（可选后端）
+============================================================ */
+function renderRank(){
+  stopTimer();
+  loadStats();
+  const wb=bestWpm('word'), pb=bestWpm('passage');
+  const total=stats.runs.length;
+  const avgAcc=total?Math.round(stats.runs.reduce((s,r)=>s+r.acc,0)/total):0;
+  const runs=stats.runs.slice().reverse();
+  let html=`
+   <div class="topline"><span class="counter">我的成绩 &amp; 全球排行榜</span><span class="pill">RANK</span></div>
+   <div class="errsummary" style="grid-template-columns:repeat(3,1fr)">
+     <div class="errsum w"><div class="n">${wb}</div><div class="l">单词最佳 WPM</div></div>
+     <div class="errsum w"><div class="n">${pb}</div><div class="l">文章最佳 WPM</div></div>
+     <div class="errsum g"><div class="n">${avgAcc}<span style="font-size:14px">%</span></div><div class="l">平均准确率</div></div>
+   </div>
+   <div class="storestat">${storeStatusHTML()}</div>
+   <div class="sectitle">最近练习（${total}）</div>`;
+  if(!runs.length){
+    html+=`<div class="muted" style="font-size:14px;position:relative;z-index:1">还没有记录——去「单词」或「文章」模式打完一轮，成绩就会出现在这里。</div>`;
+  } else {
+    html+='<div class="errlist">'+runs.slice(0,12).map(r=>
+      `<div class="erritem" style="border-left-color:var(--cursor)">
+        <div class="etag">${MODE_CN[r.mode]||r.mode} · ${new Date(r.ts).toLocaleString()}</div>
+        <div class="ea"><b style="font-family:'JetBrains Mono';color:var(--accent)">${r.wpm}</b> WPM　·　准确率 ${r.acc}%</div>
+      </div>`).join('')+'</div>';
+  }
+  html+=`<div class="sectitle">🏆 全球排行榜</div><div id="lbbox"></div>`;
+  card.innerHTML=html;
+  renderLeaderboardBox('word');
+}
+function renderLeaderboardBox(modeSel){
+  const box=document.getElementById('lbbox'); if(!box)return;
+  if(!getLBEndpoint()){
+    box.innerHTML=`<div class="aiendpoint" style="margin-top:0">
+      <p style="font-size:13px;margin-bottom:8px">全球排行榜需要一个后端服务（已附 <b>leaderboard-worker.js</b>，部署见 README）。填入你的排行榜地址即可启用：</p>
+      <input class="type" id="lbEp" placeholder="https://your-leaderboard.workers.dev" style="font-size:15px">
+      <div class="controls" style="margin-top:12px"><button class="btn primary" id="lbSave">保存</button></div>
+    </div>`;
+    document.getElementById('lbSave').onclick=()=>{ setLBEndpoint(document.getElementById('lbEp').value.trim()); renderRank(); };
+    return;
+  }
+  const m=modeSel||'word';
+  box.innerHTML=`<div class="subtabs"><span class="lvllabel">榜单</span>
+      <button class="subtab${m==='word'?' active':''}" data-m="word">单词 WPM</button>
+      <button class="subtab${m==='passage'?' active':''}" data-m="passage">文章 WPM</button>
+      <button class="subtab" data-m="__reset">⚙ 改地址</button>
+    </div>
+    <div id="lblist" class="loadcard" style="padding:20px"><span class="spin"></span>加载中…</div>`;
+  box.querySelectorAll('.subtab[data-m]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.m==='__reset'){ if(confirm('清除当前排行榜地址并重新设置？')){setLBEndpoint('');renderRank();} return; }
+    renderLeaderboardBox(b.dataset.m);
+  });
+  lbFetch(m).then(list=>{
+    const el=document.getElementById('lblist'); if(!el)return;
+    if(!list.length){ el.className=''; el.innerHTML='<div class="muted" style="font-size:14px">还没有人上榜，快来抢第一！打完一轮点「🏆 上榜」即可。</div>'; return; }
+    el.className='lblist';
+    el.innerHTML=list.slice(0,20).map((r,i)=>
+      `<div class="lbrow"><span class="lbrank">${i+1}</span><span class="lbname">${escapeHTML(String(r.name||'匿名'))}</span><span class="lbwpm">${parseInt(r.wpm)||0} WPM</span><span class="lbacc">${parseInt(r.acc)||0}%</span></div>`).join('');
+  }).catch(e=>{
+    const el=document.getElementById('lblist'); if(!el)return; el.className='';
+    el.innerHTML=`<div class="muted" style="font-size:14px">加载排行榜失败（${escapeHTML(e.message)}）。请检查后端地址是否正确。</div>
+      <div class="controls" style="margin-top:10px"><button class="btn" id="lbReset">改地址</button></div>`;
+    document.getElementById('lbReset').onclick=()=>{ setLBEndpoint(''); renderRank(); };
+  });
+}
+
 
 function next(){
-  if(mode==='passage'||mode==='grammar'||mode==='errors')return;
+  if(mode==='passage'||mode==='grammar'||mode==='errors'||mode==='rank')return;
   idx++;
   const total=activeWords.length;
   if(idx>=total){
@@ -1279,6 +1409,7 @@ function showWordResult(){
   const mins=(Date.now()-startTime)/60000;
   const wpm=mins>0?Math.round((correctKeys/5)/mins):0;
   const acc=keystrokes>0?Math.round(correctKeys/keystrokes*100):100;
+  recordRun(mode,wpm,acc);
   card.innerHTML=`
     <div class="result">
       <h2>这一轮完成！🎉</h2>
@@ -1286,9 +1417,13 @@ function showWordResult(){
       <p>个单词　·　平均速度 ${wpm} WPM　·　准确率 ${acc}%</p>
       <div class="controls" style="margin-top:24px">
         <button class="btn primary" id="again">再练一轮（重新打乱）→</button>
+        ${mode==='word'?'<button class="btn dark" id="submitLB">🏆 上榜</button>':''}
+        <button class="btn" id="viewRank">查看排行榜 →</button>
       </div>
     </div>`;
   document.getElementById('again').onclick=()=>switchMode(mode);
+  const sb=document.getElementById('submitLB'); if(sb)sb.onclick=()=>submitScore('word',wpm,acc);
+  document.getElementById('viewRank').onclick=()=>switchMode('rank');
 }
 
 function switchMode(m){
@@ -1299,7 +1434,8 @@ function switchMode(m){
   else if(m==='dictation'){activeWords=WORDS;buildDictation();}
   else if(m==='passage'){aiPassage=null;passTyped='';buildPassage();}
   else if(m==='grammar')buildGrammar();
-  else renderErrors();
+  else if(m==='errors')renderErrors();
+  else renderRank();
 }
 document.getElementById('tabs').addEventListener('click',e=>{
   const t=e.target.closest('.tab');if(t)switchMode(t.dataset.mode);
@@ -1307,6 +1443,7 @@ document.getElementById('tabs').addEventListener('click',e=>{
 
 /* 启动 */
 loadErrors();
+loadStats();
 switchMode('word');
 </script>
 </body>
