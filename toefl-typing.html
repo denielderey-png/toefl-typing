@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>托福打字专练 · TOEFL Typing Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ebdc;
+    --paper-2:#ece2cf;
+    --ink:#2a2521;
+    --ink-soft:#6b6358;
+    --line:#d8ccb4;
+    --accent:#bf4a2c;       /* terracotta */
+    --accent-deep:#8f3115;
+    --cursor:#1f6f9c;       /* 蓝色：当前位置指示，与错误红区分 */
+    --cursor-bg:rgba(31,111,156,.16);
+    --good:#3f7d54;         /* moss green */
+    --good-bg:rgba(63,125,84,.16);
+    --bad:#c0392b;
+    --bad-bg:rgba(192,57,43,.16);
+    --gold:#c08a2d;
+    --shadow:24px 24px 0 rgba(42,37,33,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans SC",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 18% 12%, rgba(191,74,44,.06), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(192,138,45,.08), transparent 45%),
+      var(--paper);
+    background-attachment:fixed;
+    min-height:100%;
+    padding:32px 20px 80px;
+    line-height:1.5;
+  }
+  /* subtle paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+
+  /* ---------- Header ---------- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:6px}
+  .brand h1{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(30px,6vw,46px);
+    letter-spacing:-.02em;line-height:.95}
+  .brand h1 em{font-style:italic;color:var(--accent)}
+  .brand p{font-family:"Fraunces",serif;font-style:italic;font-size:15px;color:var(--ink-soft);margin-top:4px}
+  .seal{font-family:"Fraunces",serif;font-weight:600;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    border:2px solid var(--ink);border-radius:999px;padding:8px 14px;white-space:nowrap;color:var(--ink)}
+
+  /* ---------- Mode tabs ---------- */
+  .tabs{display:flex;gap:0;margin:26px 0 22px;border:2px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--paper-2)}
+  .tab{flex:1;padding:14px 8px;background:transparent;border:none;cursor:pointer;font-family:"Noto Sans SC",sans-serif;
+    font-weight:700;font-size:15px;color:var(--ink-soft);border-right:2px solid var(--ink);transition:.18s;position:relative}
+  .tab:last-child{border-right:none}
+  .tab small{display:block;font-family:"Fraunces",serif;font-style:italic;font-weight:500;font-size:11px;opacity:.7;text-transform:none;margin-top:2px}
+  .tab:hover{background:rgba(42,37,33,.05);color:var(--ink)}
+  .tab.active{background:var(--ink);color:var(--paper)}
+  .tab.active small{opacity:.85}
+
+  /* ---------- Stat bar ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+  .stat{background:var(--paper-2);border:2px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .stat .num{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:26px;color:var(--ink);line-height:1}
+  .stat .num span{font-size:13px;color:var(--ink-soft)}
+  .stat .lbl{font-size:11px;color:var(--ink-soft);letter-spacing:.08em;margin-top:6px;text-transform:uppercase;font-family:"Fraunces",serif}
+
+  /* ---------- Card ---------- */
+  .card{background:#fbf6ec;border:2px solid var(--ink);border-radius:18px;padding:30px 28px;box-shadow:var(--shadow);position:relative}
+  .card::after{content:"";position:absolute;inset:6px;border:1px solid var(--line);border-radius:13px;pointer-events:none}
+  .topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;position:relative;z-index:1}
+  .counter{font-family:"Fraunces",serif;font-style:italic;color:var(--ink-soft);font-size:14px}
+  .pill{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--accent);
+    border:1.5px solid var(--accent);border-radius:999px;padding:3px 10px;letter-spacing:.05em}
+
+  /* word display */
+  .display{position:relative;z-index:1;text-align:center;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:10px 0 4px}
+  .word{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:clamp(36px,9vw,64px);letter-spacing:.04em;word-break:break-word}
+  .word .c{transition:color .08s, background .08s;padding:0 1px;border-radius:4px}
+  .word .c.done{color:var(--good)}
+  .word .c.wrong{color:var(--bad);background:var(--bad-bg)}
+  .word .c.cur{border-bottom:4px solid var(--cursor)}
+  .word .c.todo{color:var(--ink-soft);opacity:.45}
+  .word.hidden{filter:blur(13px);user-select:none;opacity:.55}
+  .meta{font-size:15px;color:var(--ink-soft)}
+  .meta b{color:var(--accent-deep);font-weight:700}
+  .meta .pos{font-family:"Fraunces",serif;font-style:italic;margin-right:8px;color:var(--gold)}
+  .hintbtn{background:none;border:none;color:var(--ink-soft);text-decoration:underline;cursor:pointer;font-size:13px;font-family:inherit}
+
+  /* passage display */
+  .passage{font-family:"JetBrains Mono",monospace;font-size:19px;line-height:2;position:relative;z-index:1;
+    letter-spacing:.01em;white-space:pre-wrap;word-break:break-word;max-height:46vh;overflow:auto;padding:4px}
+  .passage .c{border-radius:3px}
+  .passage .c.done{color:var(--good)}
+  .passage .c.wrong{color:#fff;background:var(--bad)}
+  .passage .c.wrong.space{background:var(--bad-bg)}
+  .passage .c.cur{background:var(--cursor);color:#fff;border-radius:3px;animation:blink 1s step-end infinite}
+  .passage .c.todo{color:var(--ink);opacity:.4}
+  @keyframes blink{50%{background:transparent;color:var(--ink)}}
+
+  /* input */
+  .inputrow{position:relative;z-index:1;margin-top:22px}
+  input.type, .hiddenInput{
+    width:100%;font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:500;
+    padding:14px 16px;border:2px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);
+    outline:none;transition:.18s;letter-spacing:.04em}
+  input.type:focus{border-color:var(--cursor);box-shadow:0 0 0 4px var(--cursor-bg)}
+  input.type.ok{border-color:var(--good);box-shadow:0 0 0 4px var(--good-bg)}
+  input.type.err{border-color:var(--bad);box-shadow:0 0 0 4px var(--bad-bg)}
+  .hiddenInput{position:absolute;opacity:0;pointer-events:none;height:1px}
+  .focushint{text-align:center;color:var(--ink-soft);font-style:italic;font-family:"Fraunces",serif;
+    cursor:pointer;padding:10px;font-size:14px}
+  .focushint:hover{color:var(--accent)}
+
+  /* controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:22px;position:relative;z-index:1}
+  button.btn{font-family:"Noto Sans SC",sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+    border:2px solid var(--ink);border-radius:11px;padding:11px 18px;background:var(--paper);color:var(--ink);
+    transition:.15s;display:inline-flex;align-items:center;gap:7px}
+  button.btn:hover{transform:translateY(-2px);box-shadow:4px 4px 0 rgba(42,37,33,.18)}
+  button.btn:active{transform:translateY(0);box-shadow:none}
+  button.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent-deep)}
+  button.btn.dark{background:var(--ink);color:var(--paper)}
+  button.btn.speak{background:var(--gold);color:#fff;border-color:#9a6b1c}
+  .ico{font-size:17px;line-height:1}
+
+  /* speed control */
+  .speed{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:18px;position:relative;z-index:1;
+    color:var(--ink-soft);font-size:13px;font-family:"Fraunces",serif;font-style:italic}
+  .speed input[type=range]{accent-color:var(--accent);width:150px}
+
+  /* result */
+  .result{text-align:center;padding:12px 0 2px;position:relative;z-index:1}
+  .result h2{font-family:"Fraunces",serif;font-size:30px;font-weight:900}
+  .result p{color:var(--ink-soft);margin-top:6px}
+  .result .big{font-family:"JetBrains Mono",monospace;font-size:54px;font-weight:700;color:var(--accent);margin:8px 0}
+
+  footer{text-align:center;margin-top:32px;color:var(--ink-soft);font-size:12.5px;font-family:"Fraunces",serif;font-style:italic}
+  .kbd{font-family:"JetBrains Mono",monospace;font-size:11px;background:var(--paper-2);border:1px solid var(--line);
+    border-radius:5px;padding:1px 6px;color:var(--ink)}
+  .ttswarn{display:none;background:var(--bad-bg);border:1.5px solid var(--bad);color:var(--bad);
+    border-radius:10px;padding:10px 14px;font-size:13px;margin-top:14px;text-align:center;position:relative;z-index:1}
+
+  @media(max-width:560px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .card{padding:22px 16px}
+    .tab{font-size:13px}
+  }
+  /* ---------- Grammar ---------- */
+  .subtabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;position:relative;z-index:1}
+  .subtab{font-family:"Noto Sans SC",sans-serif;font-size:13px;font-weight:700;cursor:pointer;
+    border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:6px 13px;transition:.15s}
+  .subtab:hover{border-color:var(--ink);color:var(--ink)}
+  .subtab.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .subtab.lvl.active{background:var(--accent);border-color:var(--accent-deep)}
+  .lvllabel{font-size:12px;color:var(--ink-soft);align-self:center;margin-right:4px;font-family:"Fraunces",serif;font-style:italic;min-width:30px}
+  .gq{font-family:"Fraunces",serif;font-size:clamp(20px,3.6vw,26px);line-height:1.7;position:relative;z-index:1;margin:6px 0 14px}
+  .gq.small{font-size:16px;font-style:italic;color:var(--ink-soft)}
+  .gblank{color:var(--accent);font-weight:700;letter-spacing:2px}
+  .gerr{color:var(--bad);text-decoration:underline wavy var(--bad);font-weight:700}
+  .ghintrow{position:relative;z-index:1;margin-bottom:12px}
+  .ghint{display:inline-block;font-size:13px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+  .ghint b{color:var(--accent-deep)}
+  .options{display:grid;gap:10px;position:relative;z-index:1;margin-top:6px}
+  .opt{text-align:left;font-family:"JetBrains Mono",monospace;font-size:16px;cursor:pointer;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:11px;padding:12px 16px;transition:.15s}
+  .opt:hover:not(:disabled){border-color:var(--ink);transform:translateX(3px)}
+  .opt:disabled{cursor:default}
+  .opt.correct{border-color:var(--good);background:var(--good-bg);color:var(--good);font-weight:700}
+  .opt.wrong{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+  .feedback{position:relative;z-index:1;margin-top:18px;border-radius:12px;padding:14px 16px;border:2px solid}
+  .feedback:empty{display:none}
+  .feedback.ok{border-color:var(--good);background:var(--good-bg)}
+  .feedback.no{border-color:var(--bad);background:var(--bad-bg)}
+  .feedback .fhead{font-family:"Fraunces",serif;font-weight:900;font-size:18px;margin-bottom:6px}
+  .feedback.ok .fhead{color:var(--good)} .feedback.no .fhead{color:var(--bad)}
+  .feedback .fans{font-size:15px;margin-bottom:5px}
+  .feedback .fans b{font-family:"JetBrains Mono",monospace;color:var(--ink)}
+  .feedback .fexp{font-size:14px;color:var(--ink-soft);line-height:1.65}
+  .build{position:relative;z-index:1;min-height:54px;border:2px dashed var(--line);border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;background:var(--paper)}
+  .slothint{color:var(--ink-soft);font-style:italic;font-family:"Fraunces",serif;font-size:14px}
+  .bword{font-family:"JetBrains Mono",monospace;font-size:16px;cursor:pointer;background:var(--ink);color:var(--paper);border:none;border-radius:8px;padding:6px 12px;transition:.12s}
+  .bword:hover{background:var(--bad)}
+  .chips{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:"JetBrains Mono",monospace;font-size:16px;cursor:pointer;border:2px solid var(--ink);background:var(--paper-2);color:var(--ink);border-radius:8px;padding:6px 13px;transition:.12s}
+  .chip:hover:not(:disabled){background:var(--accent);color:#fff;border-color:var(--accent-deep)}
+  .chip:disabled{opacity:.28;cursor:default}
+
+  /* ---------- 错题本 / AI ---------- */
+  .errsummary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;position:relative;z-index:1}
+  .errsum{background:var(--paper-2);border:2px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .errsum .n{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:30px;line-height:1}
+  .errsum.w .n{color:var(--accent)} .errsum.g .n{color:var(--bad)}
+  .errsum .l{font-size:12px;color:var(--ink-soft);margin-top:6px;font-family:"Fraunces",serif}
+  .sectitle{font-family:"Fraunces",serif;font-weight:900;font-size:17px;margin:20px 0 10px;position:relative;z-index:1}
+  .bars{position:relative;z-index:1;display:flex;flex-direction:column;gap:8px}
+  .barrow{display:flex;align-items:center;gap:10px;font-size:13px}
+  .barrow .blab{width:92px;color:var(--ink-soft);flex-shrink:0;font-family:"JetBrains Mono",monospace;font-size:12px}
+  .bartrack{flex:1;height:14px;background:var(--paper-2);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+  .barfill{height:100%;background:var(--bad);border-radius:7px;transition:width .4s}
+  .barrow .bn{width:22px;text-align:right;font-family:"JetBrains Mono",monospace;font-weight:700}
+  .wordtags{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1}
+  .wtag{font-family:"JetBrains Mono",monospace;font-size:14px;background:var(--bad-bg);border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:4px 10px}
+  .wtag b{color:var(--ink-soft);font-weight:400;margin-left:6px;font-size:12px}
+  .wtag i{opacity:.7;font-style:normal;margin-left:6px}
+  .errlist{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px}
+  .erritem{border:1.5px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:10px 14px;background:var(--paper-2)}
+  .erritem .etag{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-soft);margin-bottom:3px}
+  .erritem .eq{font-family:"Fraunces",serif;font-size:15px;margin-bottom:5px}
+  .erritem .ea{font-size:13px;font-family:"JetBrains Mono",monospace}
+  .erritem .ea .x{color:var(--bad);text-decoration:line-through} .erritem .ea .o{color:var(--good);font-weight:700}
+  .erritem .ex{font-size:12.5px;color:var(--ink-soft);margin-top:5px;line-height:1.55}
+  .aipanel{position:relative;z-index:1;border:2px solid var(--cursor);background:var(--cursor-bg);border-radius:12px;padding:16px;margin-top:14px;line-height:1.75;font-size:14.5px;white-space:pre-wrap}
+  .aipanel:empty{display:none}
+  .aipanel h4{font-family:"Fraunces",serif;color:var(--cursor);margin-bottom:8px;font-size:16px}
+  .loadcard{text-align:center;padding:40px 10px;position:relative;z-index:1;color:var(--ink-soft);font-family:"Fraunces",serif;font-style:italic}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(42,37,33,.18);border-top-color:var(--cursor);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:8px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .muted{color:var(--ink-soft);font-style:italic;font-family:"Fraunces",serif}
+  button.btn.ai{background:var(--cursor);color:#fff;border-color:#155674}
+  .storestat{position:relative;z-index:1;font-size:12.5px;color:var(--ink-soft);font-family:"Fraunces",serif;font-style:italic;margin:10px 0 2px;display:flex;align-items:center;gap:7px;line-height:1.5}
+  .okdot,.warndot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+  .okdot{background:var(--good)} .warndot{background:var(--gold)}
+  .aiendpoint{max-width:420px;margin:20px auto 0;text-align:left;border-top:1px dashed var(--line);padding-top:16px}
+  .aiendpoint .controls{justify-content:flex-start}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>托福打字<em>专练</em></h1>
+      <p>TOEFL Typing Studio — 单词 · 听写 · 文章 · 朗读</p>
+    </div>
+    <div class="seal">Read · Type · Master</div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-mode="word">单词练习<small>Word + meaning</small></button>
+    <button class="tab" data-mode="dictation">听写拼写<small>Dictation</small></button>
+    <button class="tab" data-mode="passage">文章练习<small>Passage typing</small></button>
+    <button class="tab" data-mode="grammar">语法练习<small>Grammar drills</small></button>
+    <button class="tab" data-mode="errors">错题本<small>Review</small></button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="sWpm">0</div><div class="lbl">速度 WPM</div></div>
+    <div class="stat"><div class="num" id="sAcc">100<span>%</span></div><div class="lbl">准确率 Acc.</div></div>
+    <div class="stat"><div class="num" id="sTime">0<span>s</span></div><div class="lbl">用时 Time</div></div>
+    <div class="stat"><div class="num" id="sProg">0<span>/0</span></div><div class="lbl">进度 Done</div></div>
+  </div>
+
+  <div class="card" id="card"><!-- dynamic --></div>
+
+  <div class="ttswarn" id="ttswarn">⚠️ 当前环境的浏览器朗读功能似乎不可用。下载本文件到电脑上用 Chrome / Edge 打开即可正常发音。</div>
+
+  <footer>
+    快捷键：<span class="kbd">Tab</span> 播放发音 · <span class="kbd">Enter</span> 下一题（单词/听写） · 文章模式直接打字即可<br>
+    所有词汇与文章均为内置离线数据，发音使用浏览器内置语音合成
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   数据：托福核心词汇 + 学术短文（全部内置，离线可用）
+============================================================ */
+const WORDS = [
+  {w:"abandon",pos:"v.",cn:"放弃；抛弃"},
+  {w:"abstract",pos:"adj.",cn:"抽象的；摘要"},
+  {w:"accumulate",pos:"v.",cn:"积累；积聚"},
+  {w:"adjacent",pos:"adj.",cn:"邻近的；毗连的"},
+  {w:"advocate",pos:"v./n.",cn:"提倡；拥护者"},
+  {w:"aesthetic",pos:"adj.",cn:"美学的；审美的"},
+  {w:"ambiguous",pos:"adj.",cn:"模棱两可的"},
+  {w:"analogy",pos:"n.",cn:"类比；相似"},
+  {w:"anomaly",pos:"n.",cn:"异常；反常现象"},
+  {w:"arbitrary",pos:"adj.",cn:"任意的；武断的"},
+  {w:"atmosphere",pos:"n.",cn:"大气；氛围"},
+  {w:"autonomy",pos:"n.",cn:"自治；自主权"},
+  {w:"biodiversity",pos:"n.",cn:"生物多样性"},
+  {w:"catalyst",pos:"n.",cn:"催化剂；促因"},
+  {w:"coincide",pos:"v.",cn:"同时发生；一致"},
+  {w:"collaborate",pos:"v.",cn:"合作；协作"},
+  {w:"comprehensive",pos:"adj.",cn:"全面的；综合的"},
+  {w:"conserve",pos:"v.",cn:"保护；节省"},
+  {w:"contradict",pos:"v.",cn:"反驳；与…矛盾"},
+  {w:"controversy",pos:"n.",cn:"争论；争议"},
+  {w:"correlate",pos:"v.",cn:"相关联"},
+  {w:"deteriorate",pos:"v.",cn:"恶化；变坏"},
+  {w:"diminish",pos:"v.",cn:"减少；削弱"},
+  {w:"distinct",pos:"adj.",cn:"明显的；独特的"},
+  {w:"dominant",pos:"adj.",cn:"占主导地位的"},
+  {w:"ecosystem",pos:"n.",cn:"生态系统"},
+  {w:"elaborate",pos:"adj./v.",cn:"复杂的；详尽阐述"},
+  {w:"eliminate",pos:"v.",cn:"消除；淘汰"},
+  {w:"emphasize",pos:"v.",cn:"强调；着重"},
+  {w:"endure",pos:"v.",cn:"忍受；持续"},
+  {w:"enhance",pos:"v.",cn:"提高；增强"},
+  {w:"equivalent",pos:"adj.",cn:"相等的；等价物"},
+  {w:"evolve",pos:"v.",cn:"进化；演变"},
+  {w:"facilitate",pos:"v.",cn:"促进；使便利"},
+  {w:"fluctuate",pos:"v.",cn:"波动；起伏"},
+  {w:"fundamental",pos:"adj.",cn:"基本的；根本的"},
+  {w:"hierarchy",pos:"n.",cn:"等级制度；层级"},
+  {w:"hypothesis",pos:"n.",cn:"假设；假说"},
+  {w:"illuminate",pos:"v.",cn:"照亮；阐明"},
+  {w:"implication",pos:"n.",cn:"暗示；影响"},
+  {w:"inevitable",pos:"adj.",cn:"不可避免的"},
+  {w:"infrastructure",pos:"n.",cn:"基础设施"},
+  {w:"integrate",pos:"v.",cn:"整合；使一体化"},
+  {w:"intricate",pos:"adj.",cn:"错综复杂的"},
+  {w:"magnitude",pos:"n.",cn:"巨大；量级"},
+  {w:"mechanism",pos:"n.",cn:"机制；机械装置"},
+  {w:"migrate",pos:"v.",cn:"迁移；迁徙"},
+  {w:"mitigate",pos:"v.",cn:"减轻；缓和"},
+  {w:"nutrient",pos:"n.",cn:"营养物；养分"},
+  {w:"obscure",pos:"adj./v.",cn:"模糊的；使费解"},
+  {w:"paradigm",pos:"n.",cn:"范式；典范"},
+  {w:"perceive",pos:"v.",cn:"察觉；理解"},
+  {w:"persistent",pos:"adj.",cn:"持续的；坚持的"},
+  {w:"phenomenon",pos:"n.",cn:"现象"},
+  {w:"photosynthesis",pos:"n.",cn:"光合作用"},
+  {w:"precipitation",pos:"n.",cn:"降水；降雨量"},
+  {w:"prevalent",pos:"adj.",cn:"普遍的；流行的"},
+  {w:"profound",pos:"adj.",cn:"深刻的；深远的"},
+  {w:"prominent",pos:"adj.",cn:"显著的；杰出的"},
+  {w:"reinforce",pos:"v.",cn:"加强；强化"},
+  {w:"resilient",pos:"adj.",cn:"有韧性的；能复原的"},
+  {w:"sediment",pos:"n.",cn:"沉积物；沉淀物"},
+  {w:"significant",pos:"adj.",cn:"重要的；显著的"},
+  {w:"simultaneous",pos:"adj.",cn:"同时发生的"},
+  {w:"sophisticated",pos:"adj.",cn:"复杂精密的；老练的"},
+  {w:"spectrum",pos:"n.",cn:"光谱；范围"},
+  {w:"speculate",pos:"v.",cn:"推测；投机"},
+  {w:"sustain",pos:"v.",cn:"维持；支撑"},
+  {w:"theoretical",pos:"adj.",cn:"理论的"},
+  {w:"threshold",pos:"n.",cn:"门槛；临界点"},
+  {w:"transition",pos:"n.",cn:"过渡；转变"},
+  {w:"undermine",pos:"v.",cn:"逐渐削弱；破坏"},
+  {w:"vegetation",pos:"n.",cn:"植被；草木"},
+  {w:"versatile",pos:"adj.",cn:"多才多艺的；多用途的"},
+  {w:"vulnerable",pos:"adj.",cn:"脆弱的；易受伤害的"}
+];
+
+const PASSAGES = [
+  {title:"Photosynthesis 光合作用", text:"Plants convert sunlight into chemical energy through a process called photosynthesis. Inside the leaves, chlorophyll absorbs light and powers a reaction that combines carbon dioxide and water. The result is glucose, which fuels growth, and oxygen, which is released into the atmosphere. Without this remarkable mechanism, most life on Earth could not exist."},
+  {title:"The Industrial Revolution 工业革命", text:"The Industrial Revolution transformed societies in profound ways. As factories replaced small workshops, populations migrated from rural villages to crowded cities. New machines increased production dramatically, yet they also created harsh working conditions. Historians often emphasize that this transition reshaped not only the economy but also the daily lives of ordinary people."},
+  {title:"How Stars Form 恒星的形成", text:"Stars begin their lives within vast clouds of gas and dust. When gravity causes a region of the cloud to collapse, the material grows denser and hotter. Eventually the core becomes hot enough to trigger nuclear fusion, and a new star is born. This delicate balance between gravity and pressure can sustain a star for billions of years."},
+  {title:"Ocean Currents 洋流", text:"Ocean currents play a fundamental role in regulating the climate of our planet. Warm water from the equator flows toward the poles, while cold water returns along the ocean floor. These persistent movements distribute heat across the globe and influence weather patterns. Scientists speculate that even small changes in this circulation could have significant consequences."}
+];
+
+/* 语法练习题库：按 CEFR 等级（B1→C2）分类
+   每题含 level 字段；题型：fill 填空 / choice 选择 / correct 改错 / order 连词成句 */
+const GRAMMAR = {
+  fill:[
+    // ---- B1 ----
+    {level:"B1", sentence:"She ___ to school every morning.", hint:"go", answer:"goes", explain:"一般现在时，第三人称单数动词 +es。"},
+    {level:"B1", sentence:"They ___ TV when I arrived.", hint:"watch", answer:"were watching", explain:"过去进行时 was/were + doing，表过去某刻正在进行。"},
+    {level:"B1", sentence:"I have never ___ such a beautiful place.", hint:"see", answer:"seen", explain:"现在完成时 have + 过去分词；see→seen。"},
+    {level:"B1", sentence:"This book is ___ than that one.", hint:"interesting", answer:"more interesting", explain:"多音节形容词比较级 more + 原级。"},
+    {level:"B1", sentence:"If it ___ tomorrow, we will stay home.", hint:"rain", answer:"rains", explain:"第一条件句：if + 一般现在时，主句 will。"},
+    {level:"B1", sentence:"The bridge ___ in 1990.", hint:"build", answer:"was built", explain:"一般过去时被动：was/were + 过去分词。"},
+    {level:"B1", sentence:"He is the ___ student in the class.", hint:"tall", answer:"tallest", explain:"最高级，单音节 +est，前加 the。"},
+    {level:"B1", sentence:"She enjoys ___ in the morning.", hint:"run", answer:"running", explain:"enjoy 后接动名词；run 双写 n + ing。"},
+    // ---- B2 ----
+    {level:"B2", sentence:"By the time we arrived, the movie ___.", hint:"start", answer:"had started", explain:"过去完成时 had + 过去分词，表“过去之前已完成”。"},
+    {level:"B2", sentence:"I ___ for the bus for twenty minutes.", hint:"wait", answer:"have been waiting", explain:"现在完成进行时 have been + doing，强调持续到现在。"},
+    {level:"B2", sentence:"If I had studied harder, I ___ the exam.", hint:"pass", answer:"would have passed", explain:"第三条件句：if + had done，主句 would have done。"},
+    {level:"B2", sentence:"I wish I ___ more time yesterday.", hint:"have", answer:"had had", explain:"wish 对过去虚拟用过去完成时 had + 过去分词。"},
+    {level:"B2", sentence:"She had her hair ___ yesterday.", hint:"cut", answer:"cut", explain:"使役结构 have sth done；cut 的过去分词仍是 cut。"},
+    {level:"B2", sentence:"By 2030, they ___ the project.", hint:"complete", answer:"will have completed", explain:"将来完成时 will have + 过去分词。"},
+    // ---- C1 ----
+    {level:"C1", sentence:"The teacher insisted that every student ___ on time.", hint:"be", answer:"be", explain:"insist/suggest/demand 后从句用原形虚拟（should）be。"},
+    {level:"C1", sentence:"___ I known earlier, I would have come.", hint:"had（倒装）", answer:"had", explain:"省略 if 的条件句倒装：Had + 主语 + 过去分词。"},
+    {level:"C1", sentence:"___ finished his work, he went home.", hint:"have（完成式分词）", answer:"having", explain:"完成式分词 Having done 作状语，表先后顺序。"},
+    {level:"C1", sentence:"It ___ John who broke the window, not me.", hint:"be（过去）", answer:"was", explain:"强调句 It was X that/who…；强调过去用 was。"},
+    // ---- C2 ----
+    {level:"C2", sentence:"Little ___ she know that her life was about to change.", hint:"do（过去，倒装）", answer:"did", explain:"否定副词 Little 置首引起倒装：Little did she know…"},
+    {level:"C2", sentence:"___ it not been for your help, we would have failed.", hint:"had（倒装虚拟）", answer:"had", explain:"Had it not been for…（要不是…）= If it had not been for…"},
+    {level:"C2", sentence:"So ___ was the silence that no one dared speak.", hint:"complete（前置倒装）", answer:"complete", explain:"So + 形容词置首引起倒装：So complete was the silence that…"}
+  ],
+  choice:[
+    // ---- B1 ----
+    {level:"B1", q:"I have lived here ___ 2010.", options:["since","for","from","during"], answer:0, explain:"since + 时间点；for + 一段时间。"},
+    {level:"B1", q:"___ apple a day keeps the doctor away.", options:["A","An","The","（不填）"], answer:1, explain:"apple 以元音音素开头，用 an。"},
+    {level:"B1", q:"She is good ___ mathematics.", options:["at","in","on","with"], answer:0, explain:"固定搭配 be good at（擅长）。"},
+    {level:"B1", q:"You ___ wear a seatbelt; it's the law.", options:["must","might","could","used to"], answer:0, explain:"表义务/强制用 must。"},
+    {level:"B1", q:"There isn't ___ milk in the fridge.", options:["much","many","a few","every"], answer:0, explain:"milk 不可数，否定句用 much。"},
+    // ---- B2 ----
+    {level:"B2", q:"Neither John nor his friends ___ coming.", options:["is","are","was","am"], answer:1, explain:"neither…nor 谓语就近一致，靠近 friends 用 are。"},
+    {level:"B2", q:"He asked me ___ I was tired.", options:["if","that","what","which"], answer:0, explain:"一般疑问转宾语从句用 if/whether。"},
+    {level:"B2", q:"___ being tired, she finished the race.", options:["Despite","Although","Because","However"], answer:0, explain:"Despite/In spite of + 名词/动名词；although + 句子。"},
+    {level:"B2", q:"He's not answering — he ___ his phone.", options:["must have lost","must lose","should lose","can lose"], answer:0, explain:"对过去的肯定推测：must have + 过去分词。"},
+    {level:"B2", q:"She left early ___ catch the train.", options:["in order to","so that","despite","because"], answer:0, explain:"in order to + 动词原形表目的。"},
+    {level:"B2", q:"The more you practice, ___ you become.", options:["the better","better","best","the best"], answer:0, explain:"“the + 比较级…the + 比较级”表示“越…越…”。"},
+    {level:"B2", q:"It is the first time I ___ here.", options:["have been","was","am","be"], answer:0, explain:"It is the first time that 后接现在完成时。"},
+    // ---- C1 ----
+    {level:"C1", q:"Not only ___ late, but he also forgot the keys.", options:["he was","was he","he is","is he"], answer:1, explain:"not only 置首，后半句部分倒装：was he。"},
+    {level:"C1", q:"I'd rather you ___ now.", options:["left","leave","leaving","to leave"], answer:0, explain:"would rather + 主语 + 过去式，对现在/将来虚拟。"},
+    {level:"C1", q:"Hardly had I sat down ___ the phone rang.", options:["when","than","then","that"], answer:0, explain:"固定结构 hardly…when（一…就…）。"},
+    {level:"C1", q:"No sooner had she arrived ___ the meeting started.", options:["than","when","then","that"], answer:0, explain:"no sooner…than（一…就…）。"},
+    {level:"C1", q:"Seldom ___ such a beautiful sunset.", options:["have I seen","I have seen","I saw","did I saw"], answer:0, explain:"否定副词 Seldom 置首引起部分倒装：have I seen。"},
+    // ---- C2 ----
+    {level:"C2", q:"Only after the meeting ___ the real problem.", options:["did we understand","we understood","we did understand","understood we"], answer:0, explain:"Only + 状语置首引起部分倒装：did we understand。"},
+    {level:"C2", q:"He needn't have ___ — the deadline was extended.", options:["worried","worry","to worry","worrying"], answer:0, explain:"needn't have done = “本不必做却做了”。"},
+    {level:"C2", q:"___ as it may seem, the experiment succeeded.", options:["Strange","Strangely","However strange","Strangeness"], answer:0, explain:"形容词 + as + 主语 + may，让步倒装：Strange as it may seem…"},
+    {level:"C2", q:"Were the proposal ___, we would proceed immediately.", options:["accepted","accept","accepting","to accept"], answer:0, explain:"Were + 主语 + 过去分词，省略 if 的虚拟倒装（被动）。"}
+  ],
+  correct:[
+    // ---- B1 ----
+    {level:"B1", sentence:"He don't like coffee.", wrong:"don't", answer:"doesn't", explain:"第三人称单数否定用 doesn't。"},
+    {level:"B1", sentence:"She have finished her homework.", wrong:"have", answer:"has", explain:"第三人称单数现在完成时用 has。"},
+    {level:"B1", sentence:"There is many people here.", wrong:"is", answer:"are", explain:"people 复数，be 动词用 are。"},
+    {level:"B1", sentence:"I am interesting in music.", wrong:"interesting", answer:"interested", explain:"表“人感到有兴趣”用 -ed 形容词 interested。"},
+    {level:"B1", sentence:"He is more taller than me.", wrong:"more taller", answer:"taller", explain:"比较级不能叠加，tall→taller。"},
+    {level:"B1", sentence:"The childrens are playing outside.", wrong:"childrens", answer:"children", explain:"child 的复数是不规则形式 children。"},
+    {level:"B1", sentence:"She can sings very well.", wrong:"sings", answer:"sing", explain:"情态动词 can 后接动词原形。"},
+    {level:"B1", sentence:"This is the most happiest day.", wrong:"most happiest", answer:"happiest", explain:"最高级不能叠加，happy→happiest。"},
+    // ---- B2 ----
+    {level:"B2", sentence:"If I were you, I will tell the truth.", wrong:"will", answer:"would", explain:"第二条件句主句用 would。"},
+    {level:"B2", sentence:"The house is said to being haunted.", wrong:"being", answer:"be", explain:"双被动 is said to be，用动词原形 be。"},
+    {level:"B2", sentence:"I look forward to see you.", wrong:"see", answer:"seeing", explain:"look forward to 的 to 是介词，后接动名词 seeing。"},
+    {level:"B2", sentence:"Everyone are happy today.", wrong:"are", answer:"is", explain:"everyone 视为单数，谓语用 is。"},
+    // ---- C1 ----
+    {level:"C1", sentence:"It's essential that he submits the form today.", wrong:"submits", answer:"submit", explain:"essential that 从句用原形虚拟 submit。"},
+    {level:"C1", sentence:"Hardly I had sat down when the bell rang.", wrong:"Hardly I had", answer:"hardly had i", explain:"Hardly 置首需倒装：Hardly had I…"},
+    {level:"C1", sentence:"Not only she sings, but she also dances.", wrong:"she sings", answer:"does she sing", explain:"Not only 置首部分倒装：does she sing。"},
+    // ---- C2 ----
+    {level:"C2", sentence:"Such was his anger that he couldn't speaks.", wrong:"speaks", answer:"speak", explain:"couldn't 后接动词原形 speak。"},
+    {level:"C2", sentence:"Not until midnight he realized the mistake.", wrong:"he realized", answer:"did he realize", explain:"Not until 置首主句倒装：did he realize。"}
+  ],
+  order:[
+    // ---- B1 ----
+    {level:"B1", words:["always","she","is","late"], answer:"she is always late", explain:"频率副词 always 放在 be 动词之后。"},
+    {level:"B1", words:["english","studying","i","enjoy"], answer:"i enjoy studying english", explain:"enjoy 后接动名词；主+谓+宾。"},
+    {level:"B1", words:["to","the","went","park","they"], answer:"they went to the park", explain:"主语 + 动词 + 地点状语。"},
+    {level:"B1", words:["have","you","ever","been","to","japan"], answer:"have you ever been to japan", explain:"现在完成时疑问句 have 提前。"},
+    {level:"B1", words:["finished","homework","has","she","her"], answer:"she has finished her homework", explain:"现在完成时 has + 过去分词。"},
+    {level:"B1", words:["the","on","is","table","book","the"], answer:"the book is on the table", explain:"主语 + be + 介词短语表位置。"},
+    {level:"B1", words:["this","is","movie","very","interesting"], answer:"this movie is very interesting", explain:"主系表结构：主语 + be + 表语。"},
+    // ---- B2 ----
+    {level:"B2", words:["he","was","so","tired","that","he","slept","early"], answer:"he was so tired that he slept early", explain:"so + 形容词 + that 引导结果状语从句。"},
+    {level:"B2", words:["that","so","was","it","cold","we","stayed","inside"], answer:"it was so cold that we stayed inside", explain:"so…that 结构表示“如此…以至于…”。"},
+    {level:"B2", words:["the","got","she","repaired","car"], answer:"she got the car repaired", explain:"使役结构 get sth done。"},
+    // ---- C1 ----
+    {level:"C1", words:["had","i","known","the","truth"], answer:"had i known the truth", explain:"省略 if 的条件句倒装：Had + 主语 + 过去分词。"},
+    {level:"C1", words:["what","need","is","i","rest"], answer:"what i need is rest", explain:"wh-分裂句 What I need is… 起强调作用。"},
+    // ---- C2 ----
+    {level:"C2", words:["had","not","it","been","for","you"], answer:"had it not been for you", explain:"倒装虚拟 Had it not been for…（要不是你）。"}
+  ]
+};
+
+/* ============================================================
+   状态
+============================================================ */
+let mode = "word";
+let order = [];
+let idx = 0;
+let started = false;
+let startTime = 0;
+let timer = null;
+let keystrokes = 0;     // 总按键
+let correctKeys = 0;    // 正确按键
+let completed = 0;      // 完成数量
+
+const card = document.getElementById('card');
+const ttswarn = document.getElementById('ttswarn');
+
+/* ============================================================
+   语音合成（朗读）
+============================================================ */
+let voice = null, ttsRate = 1;
+function loadVoice(){
+  const vs = speechSynthesis.getVoices();
+  voice = vs.find(v=>/en[-_]US/i.test(v.lang) && /female|samantha|zira|google/i.test(v.name))
+       || vs.find(v=>/en[-_]US/i.test(v.lang))
+       || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
+}
+if('speechSynthesis' in window){
+  loadVoice();
+  speechSynthesis.onvoiceschanged = loadVoice;
+} else {
+  ttswarn.style.display='block';
+}
+function speak(text){
+  if(!('speechSynthesis' in window)){ttswarn.style.display='block';return;}
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = ttsRate;
+  if(voice) u.voice = voice;
+  u.onerror = ()=>{ttswarn.style.display='block';};
+  speechSynthesis.speak(u);
+}
+// 跟读：把词加入队列、不打断前一个，从而跟着打字节奏依次读出
+function speakQueue(text){
+  if(!('speechSynthesis' in window)){ttswarn.style.display='block';return;}
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = ttsRate;
+  if(voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
+/* ============================================================
+   工具
+============================================================ */
+function shuffle(n){const a=[...Array(n).keys()];for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startTimerIfNeeded(){
+  if(started) return;
+  started=true; startTime=Date.now();
+  timer=setInterval(updateStats,250);
+}
+function stopTimer(){clearInterval(timer);}
+function updateStats(){
+  const mins=(Date.now()-startTime)/60000;
+  const wpm = mins>0 ? Math.round((correctKeys/5)/mins) : 0;
+  let acc;
+  if(mode==='grammar') acc = gAnswered>0 ? Math.round(gCorrect/gAnswered*100) : 100;
+  else acc = keystrokes>0 ? Math.round(correctKeys/keystrokes*100) : 100;
+  document.getElementById('sWpm').textContent = wpm;
+  document.getElementById('sAcc').innerHTML = acc+'<span>%</span>';
+  document.getElementById('sTime').innerHTML = Math.floor((Date.now()-startTime)/1000)+'<span>s</span>';
+}
+function resetSession(total){
+  stopTimer();started=false;keystrokes=0;correctKeys=0;completed=0;idx=0;
+  document.getElementById('sWpm').textContent=0;
+  document.getElementById('sAcc').innerHTML='100<span>%</span>';
+  document.getElementById('sTime').innerHTML='0<span>s</span>';
+  document.getElementById('sProg').innerHTML='0<span>/'+total+'</span>';
+}
+function setProg(total){document.getElementById('sProg').innerHTML=completed+'<span>/'+total+'</span>';}
+
+function speedSlider(){
+  return `<div class="speed">🐢
+    <input type="range" min="0.5" max="1.3" step="0.1" value="${ttsRate}" id="rate">
+    🐇 <span id="rateVal" style="font-style:normal;font-family:'JetBrains Mono'">${ttsRate.toFixed(1)}x</span></div>`;
+}
+function bindSpeed(){
+  const r=document.getElementById('rate');
+  if(r)r.addEventListener('input',e=>{ttsRate=parseFloat(e.target.value);document.getElementById('rateVal').textContent=ttsRate.toFixed(1)+'x';});
+}
+
+/* ============================================================
+   渲染逐字母对照（单词/听写）
+============================================================ */
+function renderWord(target, typed, hidden){
+  let html='';
+  for(let i=0;i<target.length;i++){
+    let cls='c ';
+    if(i<typed.length) cls += (typed[i]===target[i]?'done':'wrong');
+    else if(i===typed.length) cls+='cur';
+    else cls+='todo';
+    const ch = target[i]===' ' ? '&nbsp;' : target[i];
+    html+=`<span class="${cls}">${ch}</span>`;
+  }
+  return `<div class="word${hidden?' hidden':''}">${html}</div>`;
+}
+
+/* ============================================================
+   模式：单词练习
+============================================================ */
+let activeWords = WORDS;   // 当前词库（可被「重练错词」或「AI 新词」替换）
+function buildWord(){
+  if(!activeWords||!activeWords.length) activeWords=WORDS;
+  order = shuffle(activeWords.length);
+  resetSession(activeWords.length);
+  renderWordCard();
+}
+function renderWordCard(){
+  const item = activeWords[order[idx]];
+  let hadError=false, wrongTyped='';
+  card.innerHTML = `
+    <div class="topline"><span class="counter">第 ${idx+1} 个 / 共 ${activeWords.length}</span><span class="pill">WORD</span></div>
+    <div class="display">
+      ${renderWord(item.w,'',false)}
+      <div class="meta"><span class="pos">${item.pos}</span><b>${item.cn}</b></div>
+    </div>
+    <div class="inputrow"><input class="type" id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="在此输入这个单词…"></div>
+    <div class="controls">
+      <button class="btn speak" id="play"><span class="ico">🔊</span> 朗读 <span class="kbd" style="border:none;background:rgba(255,255,255,.25);color:#fff">Tab</span></button>
+      <button class="btn ai" id="ainew">✨ AI 新词组</button>
+      ${aiInfiniteBtn('infBtn')}
+      <button class="btn" id="skip">跳过 →</button>
+    </div>
+    ${speedSlider()}`;
+  bindSpeed();
+  const inp=document.getElementById('inp');
+  inp.focus();
+  speak(item.w);
+  inp.addEventListener('input',()=>{
+    startTimerIfNeeded();
+    const typed=inp.value, target=item.w;
+    keystrokes++; if(typed[typed.length-1]===target[typed.length-1])correctKeys++;
+    document.querySelector('.display .word').outerHTML=renderWord(target,typed,false);
+    if(typed===target){
+      inp.classList.add('ok');completed++;setProg(activeWords.length);updateStats();
+      if(hadError) logWordErr(target,item.cn,'word',wrongTyped);
+      setTimeout(next,500);
+    } else if(target.startsWith(typed)){inp.classList.remove('err');inp.classList.remove('ok');}
+    else {inp.classList.add('err'); if(!hadError){hadError=true;wrongTyped=typed;}}
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Tab'){e.preventDefault();speak(item.w);}
+    if(e.key==='Enter'){next();}
+  });
+  document.getElementById('play').onclick=()=>{speak(item.w);inp.focus();};
+  document.getElementById('ainew').onclick=()=>aiNewWords('word');
+  bindInfinite('infBtn');
+  document.getElementById('skip').onclick=()=>{logWordErr(item.w,item.cn,'word','(跳过)');next();};
+}
+
+/* ============================================================
+   模式：听写拼写（隐藏单词，只听发音）
+============================================================ */
+function buildDictation(){
+  if(!activeWords||!activeWords.length) activeWords=WORDS;
+  order = shuffle(activeWords.length);
+  resetSession(activeWords.length);
+  renderDictationCard();
+}
+function renderDictationCard(){
+  const item = activeWords[order[idx]];
+  let revealed=false, hadError=false, wrongTyped='';
+  card.innerHTML=`
+    <div class="topline"><span class="counter">第 ${idx+1} 个 / 共 ${activeWords.length}</span><span class="pill">DICTATION</span></div>
+    <div class="display">
+      ${renderWord(item.w,'',true)}
+      <div class="meta">👂 听发音，拼出单词　<button class="hintbtn" id="reveal">看不清？显示答案</button></div>
+    </div>
+    <div class="inputrow"><input class="type" id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="拼写你听到的单词…"></div>
+    <div class="controls">
+      <button class="btn speak" id="play"><span class="ico">🔊</span> 再听一次 <span class="kbd" style="border:none;background:rgba(255,255,255,.25);color:#fff">Tab</span></button>
+      <button class="btn ai" id="ainew">✨ AI 新词组</button>
+      ${aiInfiniteBtn('infBtn')}
+      <button class="btn" id="skip">跳过 →</button>
+    </div>
+    ${speedSlider()}`;
+  bindSpeed();
+  const inp=document.getElementById('inp');
+  inp.focus();
+  setTimeout(()=>speak(item.w),250);
+  function paint(typed){document.querySelector('.display .word').outerHTML=renderWord(item.w,typed,!revealed && typed!==item.w);}
+  inp.addEventListener('input',()=>{
+    startTimerIfNeeded();
+    const typed=inp.value,target=item.w;
+    keystrokes++; if(typed[typed.length-1]===target[typed.length-1])correctKeys++;
+    paint(typed);
+    if(typed===target){
+      inp.classList.add('ok');completed++;setProg(activeWords.length);updateStats();
+      if(hadError||revealed) logWordErr(target,item.cn,'dictation',wrongTyped);
+      setTimeout(next,650);
+    }
+    else if(target.startsWith(typed)){inp.classList.remove('err','ok');}
+    else {inp.classList.add('err'); if(!hadError){hadError=true;wrongTyped=typed;}}
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Tab'){e.preventDefault();speak(item.w);}
+    if(e.key==='Enter'){next();}
+  });
+  document.getElementById('play').onclick=()=>{speak(item.w);inp.focus();};
+  document.getElementById('ainew').onclick=()=>aiNewWords('dictation');
+  bindInfinite('infBtn');
+  document.getElementById('reveal').onclick=()=>{revealed=true;paint(inp.value);inp.focus();};
+  document.getElementById('skip').onclick=()=>{logWordErr(item.w,item.cn,'dictation','(跳过)');next();};
+}
+
+/* ============================================================
+   模式：文章练习
+============================================================ */
+let pIdx=0;
+let followRead=false;   // 跟读开关
+let passTyped='';       // 保存文章已打内容（切换跟读时不丢失）
+function buildPassage(){
+  resetSession(PASSAGES.length);
+  passTyped='';
+  pIdx = Math.floor(Math.random()*PASSAGES.length);
+  renderPassageCard();
+}
+function renderPassageCard(){
+  const p = aiPassage || PASSAGES[pIdx];
+  const target=p.text;
+  card.innerHTML=`
+    <div class="topline"><span class="counter">${p.title}</span><span class="pill">${aiPassage?'AI · PASSAGE':'PASSAGE'}</span></div>
+    <div class="passage" id="pass"></div>
+    <input class="hiddenInput" id="hinp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="focushint" id="focus">▶ 点此开始 / 点击文章区域后直接打字</div>
+    <div class="controls">
+      <button class="btn speak" id="play"><span class="ico">🔊</span> 朗读全文</button>
+      <button class="btn ${followRead?'primary':''}" id="follow"><span class="ico">🎧</span> 跟读 ${followRead?'开':'关'}</button>
+      <button class="btn ai" id="aip">✨ AI 新文章</button>
+      ${aiInfiniteBtn('infBtn')}
+      <button class="btn dark" id="redo">重新开始</button>
+      <button class="btn" id="another">换一篇 →</button>
+    </div>
+    ${speedSlider()}`;
+  bindSpeed();
+  const passEl=document.getElementById('pass');
+  const hinp=document.getElementById('hinp');
+  const focusHint=document.getElementById('focus');
+  let typed=passTyped;
+  // 切分单词，记录每个词的起止位置（用于「跟读」）
+  const segs=[]; let m, re=/\S+/g;
+  while((m=re.exec(target))!==null){segs.push({text:m[0],start:m.index,end:m.index+m[0].length-1});}
+  let spokenCount=0;
+  for(const s of segs){ if(typed.length>s.end) spokenCount++; else break; } // 已打过的词不重读
+  function followSpeak(){
+    if(!followRead)return;
+    // 已完整打出的词数：打到该词最后一个字母之后即算完成
+    let done=0;
+    for(const s of segs){ if(typed.length>s.end) done++; else break; }
+    if(done>spokenCount){
+      for(let k=spokenCount;k<done;k++) speakQueue(segs[k].text);
+      spokenCount=done;
+    } else if(done<spokenCount){ spokenCount=done; } // 退格后允许重读
+  }
+  function paint(){
+    let html='';
+    for(let i=0;i<target.length;i++){
+      let cls='c ';
+      const isSpace=target[i]===' ';
+      if(i<typed.length) cls+=(typed[i]===target[i]?'done':'wrong'+(isSpace?' space':''));
+      else if(i===typed.length) cls+='cur';
+      else cls+='todo';
+      let ch=target[i];
+      if(ch==='\n') ch='↵\n'; else if(ch===' ') ch='&nbsp;';
+      html+=`<span class="${cls}">${ch}</span>`;
+    }
+    passEl.innerHTML=html;
+  }
+  paint();
+  hinp.value=typed;
+  if(typed.length>0){hinp.focus();focusHint.textContent='✍️ 正在输入… 错了用退格修正';}
+  function focusIt(){hinp.focus();focusHint.textContent='✍️ 正在输入… 错了用退格修正';}
+  passEl.onclick=focusIt; focusHint.onclick=focusIt;
+  hinp.addEventListener('input',()=>{
+    startTimerIfNeeded();
+    const v=hinp.value;
+    // 统计新增按键
+    if(v.length>typed.length){
+      const i=v.length-1;keystrokes++;
+      if(v[i]===target[i])correctKeys++;
+    }
+    typed=v.slice(0,target.length);passTyped=typed;
+    paint();updateStats();followSpeak();
+    if(typed===target){
+      stopTimer();completed=1;setProg(1);
+      const seen=new Set();
+      segs.forEach(s=>{const t=typed.slice(s.start,s.end+1); if(t!==s.text){const cw=cleanWord(s.text); if(cw&&!seen.has(cw)){seen.add(cw);logWordErr(s.text,'','passage');}}});
+      showPassageResult();
+      if(aiInfinite) setTimeout(()=>{ if(mode==='passage') aiNewPassage(); }, 1800);
+    }
+  });
+  document.getElementById('play').onclick=()=>speak(target);
+  document.getElementById('aip').onclick=aiNewPassage;
+  bindInfinite('infBtn');
+  document.getElementById('follow').onclick=()=>{followRead=!followRead;renderPassageCard();};
+  document.getElementById('redo').onclick=()=>{typed='';passTyped='';spokenCount=0;hinp.value='';resetSession(1);paint();focusHint.textContent='▶ 点此开始 / 点击文章区域后直接打字';};
+  document.getElementById('another').onclick=()=>{aiPassage=null;pIdx=(pIdx+1)%PASSAGES.length;buildPassage();};
+}
+function showPassageResult(){
+  const mins=(Date.now()-startTime)/60000;
+  const wpm=Math.round((correctKeys/5)/mins);
+  const acc=keystrokes>0?Math.round(correctKeys/keystrokes*100):100;
+  card.innerHTML=`
+    <div class="result">
+      <h2>完成！🎉</h2>
+      <div class="big">${wpm}</div>
+      <p>WPM 速度　·　准确率 ${acc}%　·　用时 ${Math.floor((Date.now()-startTime)/1000)} 秒</p>
+      <div class="controls" style="margin-top:24px">
+        <button class="btn primary" id="again">再来一篇 →</button>
+        <button class="btn ai" id="aip2">✨ AI 新文章 →</button>
+        <button class="btn" id="same">重做本篇</button>
+      </div>
+    </div>`;
+  document.getElementById('again').onclick=()=>{aiPassage=null;passTyped='';pIdx=(pIdx+1)%PASSAGES.length;buildPassage();};
+  document.getElementById('aip2').onclick=()=>{passTyped='';aiNewPassage();};
+  document.getElementById('same').onclick=()=>{passTyped='';renderPassageCard();};
+}
+
+/* ============================================================
+   模式：语法练习（词形填空 / 选择题 / 句子改错 / 连词成句 / 综合）
+============================================================ */
+let grammarType='mixed';
+let grammarLevel='all';
+let gQueue=[], gIdx=0, gCorrect=0, gAnswered=0, gItemAnswered=false;
+const G_TYPES=[['mixed','综合'],['fill','词形填空'],['choice','选择题'],['correct','句子改错'],['order','连词成句']];
+const G_LEVELS=[['all','全部'],['B1','B1 中级'],['B2','B2 中高级'],['C1','C1 高级'],['C2','C2 精通']];
+const G_LABEL={fill:'FILL-IN',choice:'CHOICE',correct:'CORRECTION',order:'WORD ORDER'};
+function gNorm(s){return s.trim().toLowerCase().replace(/[.,!?\u2019']/g,'').replace(/\s+/g,' ');}
+function gShuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function buildGrammar(){
+  let list=[];
+  const add=t=>GRAMMAR[t].forEach(it=>{ if(grammarLevel==='all'||it.level===grammarLevel) list.push({type:t,item:it}); });
+  if(grammarType==='mixed'){['fill','choice','correct','order'].forEach(add);}
+  else add(grammarType);
+  gQueue=gShuffle(list);
+  resetSession(gQueue.length);
+  gCorrect=0;gAnswered=0;gIdx=0;
+  renderGrammarItem();
+}
+function levelTabsHTML(){
+  return '<div class="subtabs"><span class="lvllabel">难度</span>'+G_LEVELS.map(([k,l])=>
+    `<button class="subtab lvl${grammarLevel===k?' active':''}" data-l="${k}">${l}</button>`).join('')+'</div>';
+}
+function subtabsHTML(){
+  return '<div class="subtabs"><span class="lvllabel">题型</span>'+G_TYPES.map(([k,l])=>
+    `<button class="subtab${grammarType===k?' active':''}" data-g="${k}">${l}</button>`).join('')+'</div>';
+}
+function bindSubtabs(){
+  card.querySelectorAll('.subtab[data-g]').forEach(b=>b.onclick=()=>{grammarType=b.dataset.g;buildGrammar();});
+  card.querySelectorAll('.subtab[data-l]').forEach(b=>b.onclick=()=>{grammarLevel=b.dataset.l;buildGrammar();});
+}
+function gFeedback(ok,answer,explain){
+  const f=document.getElementById('gfeed');
+  f.className='feedback '+(ok?'ok':'no');
+  f.innerHTML=`<div class="fhead">${ok?'✓ 回答正确':'✗ 再看看'}</div>
+    <div class="fans">正确答案：<b>${answer}</b></div>
+    <div class="fexp">📘 ${explain}</div>`;
+}
+function gRecord(ok){
+  if(gItemAnswered)return; gItemAnswered=true;
+  startTimerIfNeeded();
+  gAnswered++; if(ok)gCorrect++;
+  document.getElementById('sProg').innerHTML=gAnswered+'<span>/'+gQueue.length+'</span>';
+  updateStats();
+}
+function gNextBtn(){
+  const last=gIdx===gQueue.length-1;
+  document.getElementById('gctrl').innerHTML=`<button class="btn primary" id="gnext">${last?'查看成绩 →':'下一题 →'}</button>`;
+  const b=document.getElementById('gnext');
+  b.onclick=()=>{gIdx++;renderGrammarItem();};
+  b.focus();
+}
+function gNext(){gIdx++;renderGrammarItem();}
+
+function renderGrammarItem(){
+  if(gQueue.length===0){
+    card.innerHTML = levelTabsHTML()+subtabsHTML()+
+      `<div class="result"><p style="color:var(--ink-soft)">该难度下暂无此题型，换个组合试试 👆</p></div>`;
+    bindSubtabs(); return;
+  }
+  if(gIdx>=gQueue.length){
+    if(aiInfinite){ aiNewGrammar(); return; }
+    showGrammarResult(); return;
+  }
+  const {type,item}=gQueue[gIdx];
+  gItemAnswered=false;
+  let body='';
+  if(type==='fill'){
+    body=`<div class="gq">${item.sentence.replace('___','<span class="gblank">______</span>')}</div>
+      <div class="ghintrow"><span class="ghint">提示（原形/基础形式）：<b>${item.hint}</b></span></div>
+      <div class="inputrow"><input class="type" id="ginp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="填入正确形式…"></div>`;
+  } else if(type==='choice'){
+    body=`<div class="gq">${item.q}</div>
+      <div class="options" id="gopts">${item.options.map((o,i)=>`<button class="opt" data-i="${i}">${String.fromCharCode(65+i)}.　${o}</button>`).join('')}</div>`;
+  } else if(type==='correct'){
+    const marked=item.sentence.replace(item.wrong,`<span class="gerr">${item.wrong}</span>`);
+    body=`<div class="gq">${marked}</div>
+      <div class="ghintrow"><span class="ghint">句中有一处语法错误（红色波浪线），请输入<b>改正后的形式</b></span></div>
+      <div class="inputrow"><input class="type" id="ginp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="输入正确的写法…"></div>`;
+  } else { // order
+    body=`<div class="gq small">点击下方单词，按正确语序组成句子：</div>
+      <div class="build" id="gbuild"></div>
+      <div class="chips" id="gchips"></div>`;
+  }
+  card.innerHTML = levelTabsHTML() + subtabsHTML()
+    + `<div class="controls" style="justify-content:flex-start;margin:-4px 0 14px"><button class="btn ai" id="gai">✨ AI 出题（按当前难度题型）</button>${aiInfiniteBtn('infBtn')}</div>`
+    + `<div class="topline"><span class="counter">第 ${gIdx+1} 题 / 共 ${gQueue.length}</span><span class="pill">${item.level} · ${G_LABEL[type]}</span></div>`
+    + body
+    + `<div class="feedback" id="gfeed"></div>`
+    + `<div class="controls" id="gctrl"></div>`;
+  bindSubtabs();
+  document.getElementById('gai').onclick=aiNewGrammar;
+  bindInfinite('infBtn');
+
+  if(type==='fill'||type==='correct'){
+    const inp=document.getElementById('ginp'); inp.focus();
+    const check=()=>{
+      if(gItemAnswered)return;
+      const ok=gNorm(inp.value)===gNorm(item.answer);
+      gRecord(ok); inp.disabled=true; inp.classList.add(ok?'ok':'err');
+      if(!ok) logGrammarErr(type,item,inp.value.trim()||'(空)');
+      gFeedback(ok,item.answer,item.explain); gNextBtn();
+    };
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();gItemAnswered?gNext():check();}});
+    document.getElementById('gctrl').innerHTML='<button class="btn dark" id="gcheck">检查 ✓</button>';
+    document.getElementById('gcheck').onclick=check;
+  } else if(type==='choice'){
+    document.querySelectorAll('#gopts .opt').forEach(b=>b.onclick=()=>{
+      if(gItemAnswered)return;
+      const i=+b.dataset.i, ok=i===item.answer;
+      document.querySelectorAll('#gopts .opt').forEach((x,xi)=>{x.disabled=true;if(xi===item.answer)x.classList.add('correct');});
+      if(!ok)b.classList.add('wrong');
+      gRecord(ok);
+      if(!ok) logGrammarErr(type,item,item.options[i]);
+      gFeedback(ok,item.options[item.answer],item.explain); gNextBtn();
+    });
+  } else { // order
+    const pool=gShuffle(item.words.map((w,i)=>({w,i})));
+    let chosen=[]; // {w,i}
+    const buildEl=document.getElementById('gbuild');
+    const chipsEl=document.getElementById('gchips');
+    function draw(){
+      chipsEl.innerHTML=pool.map(p=>`<button class="chip" data-i="${p.i}" ${chosen.some(c=>c.i===p.i)?'disabled':''}>${p.w}</button>`).join('');
+      buildEl.innerHTML = chosen.length?chosen.map(c=>`<button class="bword" data-i="${c.i}">${c.w}</button>`).join(''):'<span class="slothint">点击下方单词加入…（点已选的词可移除）</span>';
+      if(!gItemAnswered){
+        chipsEl.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{if(b.disabled)return;chosen.push({w:b.textContent,i:+b.dataset.i});draw();});
+        buildEl.querySelectorAll('.bword').forEach(b=>b.onclick=()=>{const idx=+b.dataset.i;chosen=chosen.filter(c=>c.i!==idx);draw();});
+      }
+    }
+    draw();
+    const check=()=>{
+      if(gItemAnswered)return;
+      if(!chosen.length)return;
+      const built=chosen.map(c=>c.w).join(' ');
+      const ok=gNorm(built)===gNorm(item.answer);
+      gRecord(ok); draw();
+      // 大写首字母展示标准答案
+      const pretty=item.answer.charAt(0).toUpperCase()+item.answer.slice(1)+'.';
+      if(!ok) logGrammarErr(type,item,built);
+      gFeedback(ok,pretty,item.explain); gNextBtn();
+    };
+    document.getElementById('gctrl').innerHTML='<button class="btn dark" id="gcheck">检查 ✓</button>';
+    document.getElementById('gcheck').onclick=check;
+  }
+}
+function showGrammarResult(){
+  stopTimer();
+  const acc=gAnswered>0?Math.round(gCorrect/gAnswered*100):0;
+  let remark = acc>=90?'语法功底扎实！':acc>=70?'不错，继续巩固薄弱点。':'多看每题的讲解，再练一组。';
+  card.innerHTML=`
+    <div class="result">
+      <h2>语法练习完成！🎉</h2>
+      <div class="big">${gCorrect}/${gAnswered}</div>
+      <p>答对题数　·　正确率 ${acc}%　·　${remark}</p>
+      <div class="controls" style="margin-top:24px">
+        <button class="btn primary" id="gagain">再来一组（重新打乱）→</button>
+      </div>
+    </div>`;
+  document.getElementById('gagain').onclick=buildGrammar;
+}
+
+/* ============================================================
+   AI 生成（在 Claude 应用内联网时可用，实现无限不重复题量）
+============================================================ */
+let generating=false;
+let aiInfinite=false;   // 无限模式：练到队尾自动用 AI 续题
+function aiInfiniteBtn(id){
+  return `<button class="btn${aiInfinite?' primary':''}" id="${id}" title="到队尾自动用 AI 续题，免手动点">♾ 无限 ${aiInfinite?'开':'关'}</button>`;
+}
+function bindInfinite(id){
+  const b=document.getElementById(id); if(!b)return;
+  b.onclick=()=>{
+    aiInfinite=!aiInfinite;
+    b.classList.toggle('primary',aiInfinite);
+    b.innerHTML='♾ 无限 '+(aiInfinite?'开':'关');
+  };
+}
+/* AI 端点：默认走 Claude 应用内的官方接口；公开部署时可填入自建代理（Cloudflare Worker），
+   代理隐藏 API key，并保持相同的请求/响应格式。 */
+const DEFAULT_AI_ENDPOINT="https://api.anthropic.com/v1/messages";
+function getAIEndpoint(){
+  try{ return localStorage.getItem('toefl_ai_endpoint') || DEFAULT_AI_ENDPOINT; }
+  catch(e){ return DEFAULT_AI_ENDPOINT; }
+}
+function setAIEndpoint(url){
+  try{ url?localStorage.setItem('toefl_ai_endpoint',url):localStorage.removeItem('toefl_ai_endpoint'); }catch(e){}
+}
+async function claudeCall(prompt){
+  const res=await fetch(getAIEndpoint(),{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})
+  });
+  if(!res.ok) throw new Error('AI HTTP '+res.status);
+  const data=await res.json();
+  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join("\n");
+}
+async function claudeJSON(prompt){
+  const t=await claudeCall(prompt);
+  const clean=t.replace(/```json/g,'').replace(/```/g,'').trim();
+  return JSON.parse(clean);
+}
+function loadingCard(msg){
+  card.innerHTML=`<div class="loadcard"><span class="spin"></span>${msg}</div>`;
+}
+function aiFail(){
+  const cur=getAIEndpoint();
+  const isCustom=cur!==DEFAULT_AI_ENDPOINT;
+  card.innerHTML=`<div class="loadcard"><p>⚠️ AI 生成暂时不可用。</p>
+    <p style="font-size:13px;margin-top:8px">官方接口需在 <b>Claude 应用内联网</b>运行；公开网页 / 离线打开时无法直接调用。已内置的题库仍可正常使用。</p>
+    <div class="aiendpoint">
+      <p style="font-size:13px;margin-bottom:8px">已自建 AI 代理后端？填入地址即可在公开版启用 AI（留空＝用官方接口）：</p>
+      <input class="type" id="aiEp" placeholder="https://your-worker.workers.dev" value="${isCustom?escapeHTML(cur):''}" style="font-size:15px">
+      <div class="controls" style="margin-top:12px">
+        <button class="btn primary" id="aiSave">保存并重试</button>
+        <button class="btn" id="aiback">返回内置题库</button>
+      </div>
+    </div></div>`;
+  document.getElementById('aiback').onclick=()=>switchMode(mode);
+  document.getElementById('aiSave').onclick=()=>{
+    const v=document.getElementById('aiEp').value.trim();
+    setAIEndpoint(v);
+    generating=false;
+    switchMode(mode);
+  };
+}
+
+// —— 生成新文章 ——
+let aiPassage=null;
+async function aiNewPassage(){
+  if(generating)return; generating=true;
+  loadingCard('AI 正在撰写一篇全新的学术短文…');
+  const avoid=[...PASSAGES.map(p=>p.title)].slice(-10).join('; ');
+  try{
+    const o=await claudeJSON(`Write ONE short academic passage in TOEFL reading style, 60-95 words, on a fresh random academic topic (science, history, art, technology, nature...). Return ONLY raw JSON, no markdown: {"title":"English Title 中文小标题","text":"the passage in one paragraph"}. Pick a topic different from: ${avoid}.`);
+    if(!o.text)throw 0;
+    aiPassage={title:o.title||'AI Passage', text:String(o.text).replace(/\s+/g,' ').trim()};
+    resetSession(1); passTyped=''; renderPassageCard();
+  }catch(e){ generating=false; aiFail(); return; }
+  generating=false;
+}
+
+// —— 生成新单词 ——
+async function aiNewWords(forMode){
+  if(generating)return; generating=true;
+  loadingCard('AI 正在挑选一组新的托福词汇…');
+  try{
+    const o=await claudeJSON(`Generate 10 TOEFL-level academic English words (not basic everyday words). Return ONLY raw JSON, no markdown: {"items":[{"word":"...","pos":"n./v./adj.","cn":"中文释义"}]}.`);
+    const items=(o.items||[]).filter(x=>x&&x.word).map(x=>({w:String(x.word).trim().toLowerCase(),pos:x.pos||'',cn:x.cn||''}));
+    if(!items.length)throw 0;
+    activeWords=items;
+    forMode==='dictation'?buildDictation():buildWord();
+  }catch(e){ generating=false; aiFail(); return; }
+  generating=false;
+}
+
+// —— 生成新语法题 ——
+function grammarPrompt(level,type){
+  const lvl=level==='all'?'mixed CEFR levels among B1, B2, C1, C2':'CEFR level '+level;
+  const kinds=(type==='order'||type==='mixed')?'fill, choice, correct':type;
+  return `You are an English grammar test generator for TOEFL learners. Generate 6 questions at ${lvl}. Use only these kinds: ${kinds}.
+Return ONLY raw JSON, no markdown. Schema:
+{"items":[
+{"kind":"fill","level":"B1","sentence":"She ___ to school.","hint":"go","answer":"goes","explain":"中文解析"},
+{"kind":"choice","level":"B2","q":"I have lived here ___ 2010.","options":["since","for","from","during"],"answer":0,"explain":"中文解析"},
+{"kind":"correct","level":"B1","sentence":"He don't like it.","wrong":"don't","answer":"doesn't","explain":"中文解析"}
+]}
+Rules: "fill" sentence MUST contain "___". "correct": "wrong" MUST be an exact substring of "sentence". "explain" in Chinese, concise. choice "answer" is 0-based index.`;
+}
+async function aiNewGrammar(){
+  if(generating)return; generating=true;
+  loadingCard('AI 正在出一组新的语法题…');
+  try{
+    const o=await claudeJSON(grammarPrompt(grammarLevel,grammarType));
+    const items=(o.items||[]).map(it=>({type:it.kind,item:{level:it.level||(grammarLevel==='all'?'B1':grammarLevel),...it}}))
+      .filter(e=>{
+        const t=e.type,it=e.item;
+        if(t==='choice')return Array.isArray(it.options)&&it.options.length>=2&&Number.isInteger(it.answer)&&it.answer>=0&&it.answer<it.options.length&&it.q;
+        if(t==='fill')return it.sentence&&it.sentence.includes('___')&&it.answer;
+        if(t==='correct')return it.sentence&&it.wrong&&it.sentence.includes(it.wrong)&&it.answer;
+        return false;
+      });
+    if(!items.length)throw 0;
+    gQueue=gShuffle(items); resetSession(gQueue.length); gCorrect=0;gAnswered=0;gIdx=0;
+    renderGrammarItem();
+  }catch(e){ generating=false; aiFail(); return; }
+  generating=false;
+}
+
+/* ============================================================
+   错题本：记录 + 分析
+============================================================ */
+let errorLog={words:[],grammar:[]};
+
+/* —— 持久化（localStorage）：受限/沙盒环境自动降级为仅本次会话 —— */
+const STORAGE_KEY='toefl_typing_errlog_v1';
+let canStore=false;
+(function probeStore(){
+  try{
+    const t='__toefl_probe__';
+    localStorage.setItem(t,'1'); localStorage.removeItem(t);
+    canStore=true;
+  }catch(e){ canStore=false; }
+})();
+function saveErrors(){
+  if(!canStore)return;
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(errorLog)); }catch(e){ canStore=false; }
+}
+function loadErrors(){
+  if(!canStore)return;
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return;
+    const o=JSON.parse(raw);
+    if(o&&Array.isArray(o.words)&&Array.isArray(o.grammar)) errorLog=o;
+  }catch(e){ /* 损坏数据则忽略，保持空错题本 */ }
+}
+
+function cleanWord(w){return String(w).toLowerCase().replace(/[^a-z'-]/g,'');}
+function logWordErr(word,cn,m,typed){
+  const w=cleanWord(word); if(!w)return;
+  errorLog.words.push({word:w,cn:cn||'',mode:m,typed:typed||''});
+  saveErrors();
+}
+function logGrammarErr(type,item,your){
+  errorLog.grammar.push({
+    level:item.level||'—', type,
+    q:item.q||item.sentence||'连词成句',
+    your:your||'(空)',
+    answer:Array.isArray(item.options)?item.options[item.answer]:item.answer,
+    explain:item.explain||''
+  });
+  saveErrors();
+}
+function wordAgg(){
+  const m={};
+  errorLog.words.forEach(e=>{
+    if(!m[e.word])m[e.word]={word:e.word,cn:e.cn,count:0,modes:new Set()};
+    m[e.word].count++; m[e.word].modes.add(e.mode); if(e.cn&&!m[e.word].cn)m[e.word].cn=e.cn;
+  });
+  return Object.values(m).sort((a,b)=>b.count-a.count);
+}
+const MODE_CN={word:'单词',dictation:'听写',passage:'文章'};
+const GTYPE_CN={fill:'词形填空',choice:'选择题',correct:'句子改错',order:'连词成句'};
+function barChart(map,labels){
+  const max=Math.max(1,...Object.values(map));
+  return '<div class="bars">'+Object.keys(map).map(k=>{
+    const v=map[k],pct=Math.round(v/max*100);
+    return `<div class="barrow"><span class="blab">${labels[k]||k}</span><div class="bartrack"><div class="barfill" style="width:${v?pct:0}%"></div></div><span class="bn">${v}</span></div>`;
+  }).join('')+'</div>';
+}
+
+function renderErrors(){
+  stopTimer();
+  const ws=wordAgg();
+  const gErrs=errorLog.grammar;
+  if(ws.length===0 && gErrs.length===0){
+    card.innerHTML=`<div class="loadcard"><p>📒 错题本还是空的</p>
+      <p style="font-size:13px;margin-top:8px">去练习吧——打错的单词、答错的语法题会自动收集到这里，并生成薄弱点分析。</p>
+      <div class="storestat" style="margin-top:14px">${storeStatusHTML()}</div>
+      <div class="controls" style="margin-top:14px">
+        <button class="btn" id="importErr">⬆ 导入备份</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      </div></div>`;
+    const ib=document.getElementById('importErr');
+    if(ib)ib.onclick=()=>document.getElementById('importFile').click();
+    const f=document.getElementById('importFile');
+    if(f)f.onchange=importErrorsFromFile;
+    return;
+  }
+  const byLevel={B1:0,B2:0,C1:0,C2:0}; const byType={fill:0,choice:0,correct:0,order:0};
+  gErrs.forEach(e=>{if(byLevel[e.level]!=null)byLevel[e.level]++; if(byType[e.type]!=null)byType[e.type]++;});
+
+  let html=`<div class="errsummary">
+    <div class="errsum w"><div class="n">${ws.length}</div><div class="l">易错单词（去重）</div></div>
+    <div class="errsum g"><div class="n">${gErrs.length}</div><div class="l">语法错题</div></div>
+  </div>
+  <div class="storestat">${storeStatusHTML()}</div>
+  <div class="controls" style="justify-content:flex-start;margin-top:6px">
+    ${ws.length?'<button class="btn dark" id="reviewW">🔁 重练这些错词</button>':''}
+    <button class="btn ai" id="aiAnalyze">✨ AI 学习分析</button>
+    <button class="btn" id="exportErr">⬇ 导出备份</button>
+    <button class="btn" id="importErr">⬆ 导入</button>
+    <button class="btn" id="clearErr">🗑 清空</button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+  </div>
+  <div class="aipanel" id="aibox"></div>`;
+
+  if(gErrs.length){
+    html+=`<div class="sectitle">语法薄弱点 · 按等级</div>${barChart(byLevel,{})}`;
+    html+=`<div class="sectitle">语法薄弱点 · 按题型</div>${barChart(byType,GTYPE_CN)}`;
+  }
+  if(ws.length){
+    html+=`<div class="sectitle">易错单词（${ws.length}）</div><div class="wordtags">`+
+      ws.slice(0,40).map(w=>`<span class="wtag">${w.word}${w.cn?`<b>${w.cn}</b>`:''}${w.count>1?`<i>×${w.count}</i>`:''}</span>`).join('')+`</div>`;
+  }
+  if(gErrs.length){
+    html+=`<div class="sectitle">语法错题明细</div><div class="errlist">`+
+      gErrs.slice().reverse().slice(0,30).map(e=>`<div class="erritem">
+        <div class="etag">${e.level} · ${GTYPE_CN[e.type]||e.type}</div>
+        <div class="eq">${escapeHTML(e.q)}</div>
+        <div class="ea">你的答案 <span class="x">${escapeHTML(e.your)}</span> → 正确 <span class="o">${escapeHTML(e.answer)}</span></div>
+        ${e.explain?`<div class="ex">📘 ${escapeHTML(e.explain)}</div>`:''}
+      </div>`).join('')+`</div>`;
+  }
+  card.innerHTML=html;
+  if(ws.length)document.getElementById('reviewW').onclick=reviewWrongWords;
+  document.getElementById('aiAnalyze').onclick=aiAnalyze;
+  document.getElementById('exportErr').onclick=exportErrors;
+  document.getElementById('importErr').onclick=()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange=importErrorsFromFile;
+  document.getElementById('clearErr').onclick=()=>{
+    if(!confirm('确定清空整个错题本？此操作不可撤销（建议先导出备份）。'))return;
+    errorLog={words:[],grammar:[]}; saveErrors(); renderErrors();
+  };
+}
+function escapeHTML(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* —— 存储状态提示行 —— */
+function storeStatusHTML(){
+  return canStore
+    ? '<span class="okdot"></span>错题已在本机本地保存，关闭页面后仍保留。'
+    : '<span class="warndot"></span>当前环境无法本地保存（如应用内预览/隐私模式）——错题仅在本次会话保留，可用「导出备份」手动留存。';
+}
+
+/* —— 导出 / 导入 错题本 —— */
+function exportErrors(){
+  const blob=new Blob([JSON.stringify(errorLog,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date(), pad=n=>String(n).padStart(2,'0');
+  a.href=url;
+  a.download=`toefl-错题本-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importErrorsFromFile(e){
+  const file=e.target.files&&e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const o=JSON.parse(reader.result);
+      if(!o||!Array.isArray(o.words)||!Array.isArray(o.grammar)) throw 0;
+      const merge=confirm('点「确定」=与现有错题合并；点「取消」=用文件完全替换。');
+      if(merge){
+        errorLog.words=errorLog.words.concat(o.words);
+        errorLog.grammar=errorLog.grammar.concat(o.grammar);
+      } else { errorLog={words:o.words,grammar:o.grammar}; }
+      saveErrors(); renderErrors();
+    }catch(err){ alert('导入失败：文件不是有效的错题本备份。'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+function reviewWrongWords(){
+  const ws=wordAgg(); if(!ws.length)return;
+  activeWords=ws.map(x=>{const f=WORDS.find(w=>w.w.toLowerCase()===x.word);return f?f:{w:x.word,pos:'',cn:x.cn||'错词复习'};});
+  mode='word'; setActiveTab('word');
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  buildWord();
+}
+function setActiveTab(m){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));}
+
+async function aiAnalyze(){
+  const box=document.getElementById('aibox');
+  box.innerHTML='<span class="spin"></span>AI 正在分析你的错题…';
+  const ws=wordAgg().slice(0,20).map(w=>w.word).join(', ');
+  const g=errorLog.grammar.slice(-20).map(e=>`[${e.level}/${GTYPE_CN[e.type]||e.type}] 题:${e.q} 误:${e.your} 正:${e.answer}`).join('\n');
+  const prompt=`你是一位托福备考辅导老师。根据学生的错题数据，用中文给出简洁分析（180字以内，分点）：1) 主要薄弱知识点；2) 每点一句规则提醒；3) 三条具体练习建议。\n【易错单词】${ws||'无'}\n【语法错题】\n${g||'无'}`;
+  try{
+    const t=await claudeCall(prompt);
+    box.innerHTML='<h4>📊 AI 学习分析</h4>'+escapeHTML(t.trim());
+  }catch(e){
+    box.innerHTML='<span class="muted">AI 分析需在 Claude 应用内联网运行；离线/下载版暂不可用。不过上方的错题统计和明细仍可帮你定位薄弱点。</span>';
+  }
+}
+
+
+function next(){
+  if(mode==='passage'||mode==='grammar'||mode==='errors')return;
+  idx++;
+  const total=activeWords.length;
+  if(idx>=total){
+    if(aiInfinite){ aiNewWords(mode); return; }
+    showWordResult(); return;
+  }
+  mode==='word'?renderWordCard():renderDictationCard();
+}
+function showWordResult(){
+  stopTimer();
+  const mins=(Date.now()-startTime)/60000;
+  const wpm=mins>0?Math.round((correctKeys/5)/mins):0;
+  const acc=keystrokes>0?Math.round(correctKeys/keystrokes*100):100;
+  card.innerHTML=`
+    <div class="result">
+      <h2>这一轮完成！🎉</h2>
+      <div class="big">${completed}</div>
+      <p>个单词　·　平均速度 ${wpm} WPM　·　准确率 ${acc}%</p>
+      <div class="controls" style="margin-top:24px">
+        <button class="btn primary" id="again">再练一轮（重新打乱）→</button>
+      </div>
+    </div>`;
+  document.getElementById('again').onclick=()=>switchMode(mode);
+}
+
+function switchMode(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  if(m==='word'){activeWords=WORDS;buildWord();}
+  else if(m==='dictation'){activeWords=WORDS;buildDictation();}
+  else if(m==='passage'){aiPassage=null;passTyped='';buildPassage();}
+  else if(m==='grammar')buildGrammar();
+  else renderErrors();
+}
+document.getElementById('tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab');if(t)switchMode(t.dataset.mode);
+});
+
+/* 启动 */
+loadErrors();
+switchMode('word');
+</script>
+</body>
+</html>
