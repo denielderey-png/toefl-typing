@@ -1414,6 +1414,37 @@ function cleanNewsText(title,desc){
   if(desc && desc.toLowerCase()!==title.toLowerCase()) text=title.replace(/[.!?]?$/,'.')+' '+desc;
   return {title:title,text:text};
 }
+function parseRssXml(xml){
+  const doc=new DOMParser().parseFromString(String(xml||''),'application/xml');
+  const items=[...doc.querySelectorAll('item')].slice(0,20).map(it=>{
+    const g=t=>{const el=it.querySelector(t);return el?el.textContent:'';};
+    const c=cleanNewsText(g('title'), g('description'));
+    return {title:c.title, text:c.text, link:(g('link')||'').trim()};
+  }).filter(x=>x.title);
+  if(!items.length) throw new Error('解析到 0 条');
+  return items;
+}
+// 多个免费来源，依次尝试；某个被限流/挡跨域就换下一个
+async function srcRss2json(rss){
+  const r=await fetch('https://api.rss2json.com/v1/api.json?count=20&rss_url='+encodeURIComponent(rss));
+  if(!r.ok)throw new Error('rss2json HTTP '+r.status);
+  const d=await r.json();
+  if(d.status!=='ok'||!Array.isArray(d.items))throw new Error((d&&d.message)||'rss2json 返回异常');
+  const out=d.items.map(it=>{const c=cleanNewsText(it.title,it.description||it.content);return {title:c.title,text:c.text,link:String(it.link||'')};}).filter(x=>x.title);
+  if(!out.length)throw new Error('rss2json 0 条');
+  return out;
+}
+async function srcAllorigins(rss){
+  const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(rss));
+  if(!r.ok)throw new Error('allorigins HTTP '+r.status);
+  const d=await r.json();
+  return parseRssXml(d&&d.contents);
+}
+async function srcCorsproxy(rss){
+  const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(rss));
+  if(!r.ok)throw new Error('corsproxy HTTP '+r.status);
+  return parseRssXml(await r.text());
+}
 async function newsFetch(feed){
   const ep=getNewsEndpoint();
   // 进阶：用户自建后端（news-worker.js）
@@ -1424,16 +1455,14 @@ async function newsFetch(feed){
     const d=await res.json();
     return Array.isArray(d)?d:(d.items||[]);
   }
-  // 默认：免费公共 RSS→JSON 中转，无需任何后端
+  // 默认：免费公共中转，多源依次尝试
   const rss=BBC_RSS[feed]||BBC_RSS.news;
-  const res=await fetch('https://api.rss2json.com/v1/api.json?count=20&rss_url='+encodeURIComponent(rss));
-  if(!res.ok)throw new Error('HTTP '+res.status);
-  const d=await res.json();
-  if(d.status!=='ok'||!Array.isArray(d.items))throw new Error((d&&d.message)||'中转服务返回异常');
-  return d.items.map(it=>{
-    const c=cleanNewsText(it.title, it.description||it.content);
-    return {title:c.title, text:c.text, link:String(it.link||'')};
-  }).filter(x=>x.title);
+  let lastErr;
+  for(const fn of [srcRss2json, srcAllorigins, srcCorsproxy]){
+    try{ const items=await fn(rss); if(items&&items.length) return items; }
+    catch(e){ lastErr=e; }
+  }
+  throw new Error((lastErr&&lastErr.message)||'所有免费来源暂时都不可用');
 }
 function renderNews(feedSel){
   stopTimer();
