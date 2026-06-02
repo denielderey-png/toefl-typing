@@ -30,11 +30,20 @@
 
 > 纯前端、无后端，离线把 `index.html` 用 Chrome / Edge 打开也能用（发音需要联网字体与系统语音）。
 
-## 🤖 让公开版也能用 AI（可选）
+## 🤖 AI 功能（可选）
 
-AI 出题 / 生成功能默认调用官方接口，**仅在 Claude 应用内运行时可用**。公开的 GitHub Pages 网页因为不能把 API key 写进前端，所以默认 AI 不可用——但内置题库不受影响。
+AI 出题 / 生成功能需连接你自己的 AI。有两种方式：
 
-要在公开版启用 AI，部署一个隐藏 key 的代理（已附 `cloudflare-worker.js`）：
+### 方式一：本机使用，填入自己的 API key（最简单）
+
+把 `index.html` **下载到电脑、双击在浏览器本地打开**（`file://`），点任意「✨ AI」按钮，在弹出的设置里填入你的 [Anthropic API key](https://console.anthropic.com)（`sk-ant-…`）即可直连你的 AI。
+
+- 🔒 **安全**：key 只存在你这台电脑的浏览器（localStorage），**不写进文件、不上传**；换电脑、或在任何公开网址上都用不了——程序做了硬限制，公开网址即使存了 key 也绝不发送。
+- 用量按 Anthropic 计费（你自己的账户）。
+
+### 方式二：公开网站，部署隐藏 key 的代理
+
+公开的 GitHub Pages 网页不能把 key 写进前端，需部署一个代理（已附 `cloudflare-worker.js`）：
 
 1. 注册 [Cloudflare](https://dash.cloudflare.com)（免费档足够）。
 2. **Workers & Pages → Create → Worker**，把 `cloudflare-worker.js` 的内容粘进去，部署。

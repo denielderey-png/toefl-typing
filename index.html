@@ -21135,6 +21135,7 @@ function bindInfinite(id){
 /* AI 端点：默认走 Claude 应用内的官方接口；公开部署时可填入自建代理（Cloudflare Worker），
    代理隐藏 API key，并保持相同的请求/响应格式。 */
 const DEFAULT_AI_ENDPOINT="https://api.anthropic.com/v1/messages";
+const DEFAULT_AI_MODEL="claude-sonnet-4-20250514";
 function getAIEndpoint(){
   try{ return localStorage.getItem('toefl_ai_endpoint') || DEFAULT_AI_ENDPOINT; }
   catch(e){ return DEFAULT_AI_ENDPOINT; }
@@ -21142,12 +21143,36 @@ function getAIEndpoint(){
 function setAIEndpoint(url){
   try{ url?localStorage.setItem('toefl_ai_endpoint',url):localStorage.removeItem('toefl_ai_endpoint'); }catch(e){}
 }
+function getAIKey(){ try{ return localStorage.getItem('toefl_ai_key')||''; }catch(e){ return ''; } }
+function setAIKey(k){ try{ k?localStorage.setItem('toefl_ai_key',k):localStorage.removeItem('toefl_ai_key'); }catch(e){} }
+function getAIModel(){ try{ return localStorage.getItem('toefl_ai_model')||DEFAULT_AI_MODEL; }catch(e){ return DEFAULT_AI_MODEL; } }
+function setAIModel(m){ try{ m?localStorage.setItem('toefl_ai_model',m):localStorage.removeItem('toefl_ai_model'); }catch(e){} }
+// 本机判定：只有在本地打开（file://）或 localhost 时，才允许用你自己的 API key 直连。
+function isLocalEnv(){
+  return location.protocol==='file:' || ['localhost','127.0.0.1','::1','[::1]'].indexOf(location.hostname)>=0;
+}
 async function claudeCall(prompt){
-  const res=await fetch(getAIEndpoint(),{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})
+  const ep=getAIEndpoint();
+  const key=getAIKey();
+  const local=isLocalEnv();
+  const headers={"Content-Type":"application/json"};
+  if(ep===DEFAULT_AI_ENDPOINT){
+    // 直连官方接口：必须是本机 + 有 key。公开网址即使存了 key 也绝不发送。
+    if(local && key){
+      headers["x-api-key"]=key;
+      headers["anthropic-version"]="2023-06-01";
+      headers["anthropic-dangerous-direct-browser-access"]="true";
+    } else if(!local){
+      throw new Error('为保护你的 key，公开网址不直连官方接口。请在本地打开本文件使用，或改用代理地址。');
+    } else {
+      throw new Error('请先在设置里填入你的 Anthropic API key。');
+    }
+  }
+  const res=await fetch(ep,{
+    method:"POST",headers:headers,
+    body:JSON.stringify({model:getAIModel(),max_tokens:1200,messages:[{role:"user",content:prompt}]})
   });
-  if(!res.ok) throw new Error('AI HTTP '+res.status);
+  if(!res.ok) throw new Error('AI HTTP '+res.status+(res.status===401?'（API key 无效或未填）':res.status===404?'（模型名可能不对，可在设置里改）':''));
   const data=await res.json();
   return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join("\n");
 }
@@ -21162,20 +21187,33 @@ function loadingCard(msg){
 function aiFail(){
   const cur=getAIEndpoint();
   const isCustom=cur!==DEFAULT_AI_ENDPOINT;
-  card.innerHTML=`<div class="loadcard"><p>⚠️ AI 生成暂时不可用。</p>
-    <p style="font-size:13px;margin-top:8px">官方接口需在 <b>Claude 应用内联网</b>运行；公开网页 / 离线打开时无法直接调用。已内置的题库仍可正常使用。</p>
+  const local=isLocalEnv();
+  const keySection = local ? `
+      <p style="font-size:13px;margin-bottom:6px"><b>① 本机使用（推荐）</b>：填入你的 Anthropic API key，本机网页直接连你的 AI。
+        <span style="color:var(--bad)">密钥只存在你这台电脑的浏览器、不会上传；换电脑或公开网址都用不了。</span></p>
+      <input class="type" id="aiKey" type="password" autocomplete="off" placeholder="sk-ant-…（你的 API key）" value="" style="font-size:15px">
+      <p style="font-size:12px;color:var(--ink-soft);margin:8px 0 0">模型（一般不用改，报错再改）：</p>
+      <input class="type" id="aiModel" placeholder="${escapeHTML(DEFAULT_AI_MODEL)}" value="${getAIModel()!==DEFAULT_AI_MODEL?escapeHTML(getAIModel()):''}" style="font-size:14px">
+      <p style="font-size:13px;margin:14px 0 6px"><b>② 或：自建代理</b>（部署 cloudflare-worker.js，给别人也能用）：</p>`
+    : `
+      <p style="font-size:13px;margin-bottom:6px;color:var(--bad)">🔒 你现在是<b>公开网址</b>。为保护你的 key，这里<b>不提供</b>直接填 key 的入口——填 key 直连只在你本地打开文件时才可用。</p>
+      <p style="font-size:13px;margin:6px 0 6px">公开网站要用 AI，请填入你自建的 AI 代理地址（部署 cloudflare-worker.js，密钥藏在服务器端）：</p>`;
+  card.innerHTML=`<div class="loadcard"><p>⚙️ 连接你的 AI</p>
+    <p style="font-size:13px;margin-top:8px">AI 功能需连接你自己的 AI 才能用。已内置的词库、文章、语法题不受影响，照常可用。</p>
     <div class="aiendpoint">
-      <p style="font-size:13px;margin-bottom:8px">已自建 AI 代理后端？填入地址即可在公开版启用 AI（留空＝用官方接口）：</p>
+      ${keySection}
       <input class="type" id="aiEp" placeholder="https://your-worker.workers.dev" value="${isCustom?escapeHTML(cur):''}" style="font-size:15px">
-      <div class="controls" style="margin-top:12px">
+      <div class="controls" style="margin-top:14px">
         <button class="btn primary" id="aiSave">保存并重试</button>
         <button class="btn" id="aiback">返回内置题库</button>
       </div>
     </div></div>`;
   document.getElementById('aiback').onclick=()=>switchMode(mode);
   document.getElementById('aiSave').onclick=()=>{
-    const v=document.getElementById('aiEp').value.trim();
-    setAIEndpoint(v);
+    const kEl=document.getElementById('aiKey'); const mEl=document.getElementById('aiModel');
+    if(kEl && kEl.value.trim()) setAIKey(kEl.value.trim());
+    if(mEl) setAIModel(mEl.value.trim());
+    setAIEndpoint(document.getElementById('aiEp').value.trim());
     generating=false;
     switchMode(mode);
   };
@@ -21600,6 +21638,11 @@ async function srcCorsproxy(rss){
   if(!r.ok)throw new Error('corsproxy HTTP '+r.status);
   return parseRssXml(await r.text());
 }
+async function srcCodetabs(rss){
+  const r=await fetch('https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(rss));
+  if(!r.ok)throw new Error('codetabs HTTP '+r.status);
+  return parseRssXml(await r.text());
+}
 async function newsFetch(feed){
   const ep=getNewsEndpoint();
   // 进阶：用户自建后端（news-worker.js）
@@ -21613,7 +21656,7 @@ async function newsFetch(feed){
   // 默认：免费公共中转，多源依次尝试
   const rss=BBC_RSS[feed]||BBC_RSS.news;
   let lastErr;
-  for(const fn of [srcRss2json, srcAllorigins, srcCorsproxy]){
+  for(const fn of [srcAllorigins, srcCodetabs, srcRss2json, srcCorsproxy]){
     try{ const items=await fn(rss); if(items&&items.length) return items; }
     catch(e){ lastErr=e; }
   }
@@ -21649,8 +21692,14 @@ function renderNews(feedSel){
     box.querySelectorAll('.news-go').forEach(b=>b.onclick=()=>loadNewsPassage(items[+b.dataset.i]));
   }).catch(e=>{
     const box=document.getElementById('newsbox'); if(!box)return; box.className='';
-    box.innerHTML=`<div class="muted" style="font-size:14px">获取新闻失败（${escapeHTML(e.message)}）。请检查后端地址是否正确。</div>
-      <div class="controls" style="margin-top:10px"><button class="btn" id="newsReset">改地址</button></div>`;
+    const isFile=(location.protocol==='file:');
+    const fileHint=isFile
+      ? `<div class="muted" style="font-size:13px;margin-top:8px;line-height:1.7">检测到你是用 <b>file://</b> 直接双击打开本文件——这种方式浏览器会以"无来源"状态联网，免费新闻中转常被挡。<br>解决：① 用<b>在线网址</b>看新闻最省事；② 或部署 <b>news-worker.js</b>（Cloudflare，免费）后在 ⚙ 填入地址，本地也能稳定抓取。</div>`
+      : '';
+    box.innerHTML=`<div class="muted" style="font-size:14px">获取新闻失败（${escapeHTML(e.message)}）。免费公共中转可能临时限流或被跨域拦截。</div>
+      ${fileHint}
+      <div class="controls" style="margin-top:10px"><button class="btn" id="newsRetry">重试</button><button class="btn" id="newsReset">改地址</button></div>`;
+    document.getElementById('newsRetry').onclick=()=>renderNews(feed);
     document.getElementById('newsReset').onclick=()=>{ setNewsEndpoint(''); renderNews(); };
   });
 }
